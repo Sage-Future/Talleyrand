@@ -1,0 +1,51 @@
+[project]
+name = "talleyrand"
+version = "0.2.0"
+description = "Backend API for Talleyrand application"
+authors = [{ name = "Talleyrand Team" }]
+dependencies = [
+    "fastapi==0.118.0",
+    "uvicorn[standard]==0.37.0",
+    "PyJWT>=2.8.0",
+    "httpx==0.28.1",
+    "pydantic[email]>=2.12.2",
+    "pydantic-settings==2.11.0",
+    "pymongo[srv]>=4.15.3",
+    "openai>=2.6.1",
+    "tiktoken>=0.8.0",
+    "anthropic>=0.109.1",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "MIT" }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+dev = "uvicorn talleyrand.main:app --reload --host 0.0.0.0 --port 8000"
+start = "uvicorn talleyrand.main:app --host 0.0.0.0 --port 8000"
+lint = "ruff check ."
+format = "ruff format ."
+test = "pytest --show-capture=all"
+post_install = "bash -c 'command -v pre-commit && pre-commit install || true'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]  # Line length handled by ruff format
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "ruff==0.13.2",
+    "pre-commit>=4.5.0",
+]

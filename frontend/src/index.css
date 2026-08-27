@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+  /* Research view: editorial ink-and-paper palette */
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --color-paper: #fbfaf7;
+  --color-parchment: #f4f2ec;
+}
+
+/* Newsreader's capitals sit well above its line-box center, so an icon that is
+   flex-centered next to serif text renders ~0.12em too low. Lift it to the
+   cap-height midpoint. Sans-serif text doesn't need this. */
+@utility icon-optical {
+  translate: 0 -0.12em;
+}
+@import 'katex/dist/katex.min.css';
+@import './styles/components.css';

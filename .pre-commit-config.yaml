@@ -1,0 +1,17 @@
+repos:
+  - repo: local
+    hooks:
+      # Backend - uses your local pdm commands
+      - id: backend-lint
+        name: Backend lint (pdm lint)
+        entry: bash -c 'cd backend && pdm lint'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      - id: backend-format
+        name: Backend format check (pdm format --check)
+        entry: bash -c 'cd backend && pdm run ruff format --check .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false

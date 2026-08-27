@@ -1,0 +1,70 @@
+# Local development only — not a production setup. The MongoDB credentials
+# below are throwaway defaults for the local containers.
+services:
+  mongodb:
+    image: mongo:8.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    restart: unless-stopped
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dev.Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    environment:
+      PYTHONUNBUFFERED: 1
+
+      # For easier debugging
+      COOKIE_SECURE: false
+      MONGODB_URL: mongodb://admin:admin@mongodb:27017
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    networks:
+      - talleyrand
+      - internal
+    depends_on:
+      - mongodb
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dev.Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      CHOKIDAR_USEPOLLING: true
+      WATCHPACK_POLLING: true
+      VITE_BACKEND_URL: 'localhost:8000'
+      VITE_IS_SECURE: 'false'
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - talleyrand
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:
+
+networks:
+  internal:
+
+  talleyrand:
+    driver: bridge

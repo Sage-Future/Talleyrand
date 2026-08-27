@@ -1,0 +1,214 @@
+@layer components {
+  /* Discrete model-tier slider in the model picker */
+  .thinking-slider {
+    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 outline-none;
+  }
+
+  .thinking-slider::-webkit-slider-thumb {
+    /* -mt-1 centers the 14px thumb on the 6px track (WebKit only) */
+    @apply -mt-1 h-3.5 w-3.5 appearance-none rounded-full border-0 bg-stone-800 transition-colors;
+  }
+
+  .thinking-slider::-moz-range-thumb {
+    @apply h-3.5 w-3.5 rounded-full border-0 bg-stone-800 transition-colors;
+  }
+
+  .thinking-slider:hover::-webkit-slider-thumb {
+    @apply bg-stone-600;
+  }
+
+  .thinking-slider:hover::-moz-range-thumb {
+    @apply bg-stone-600;
+  }
+
+  .thinking-slider:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  .thinking-slider:disabled::-webkit-slider-thumb {
+    @apply bg-stone-300;
+  }
+
+  .thinking-slider:disabled::-moz-range-thumb {
+    @apply bg-stone-300;
+  }
+
+  /* Highlightable Markdown Component */
+  .highlightable-markdown {
+    @apply relative;
+  }
+
+  /* Highlight mark styles */
+  .highlight-mark {
+    background: none; /* Remove default yellow background from <mark> element */
+  }
+
+  /* Selection a question was asked about: a soft warm wash with a fine ink
+     baseline, kept quiet against the parchment background */
+  .marker-child-selection {
+    @apply cursor-text rounded-[3px] bg-amber-200/35;
+    box-shadow: inset 0 -1.5px 0 rgb(217 119 6 / 0.35); /* amber-600 baseline */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition:
+      background-color 150ms ease-out,
+      box-shadow 150ms ease-out;
+  }
+
+  /* In the research view the highlight is a reference chip: clicking it jumps
+     to the question asked about the selection; hover emphasizes like a chip */
+  .marker-child-selection-clickable {
+    @apply cursor-pointer;
+  }
+
+  .marker-child-selection-clickable:hover {
+    @apply bg-amber-300/50;
+    box-shadow: inset 0 -1.5px 0 rgb(180 83 9 / 0.55); /* amber-700 baseline */
+  }
+
+  /* Insight marks: passages the user flagged with the lightbulb. A brighter
+     highlighter yellow, distinct from the warm amber of asked-about selections. */
+  .marker-insight {
+    @apply rounded-[3px] bg-yellow-200/70;
+    box-shadow: inset 0 -1.5px 0 rgb(202 138 4 / 0.5); /* yellow-600 baseline */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition:
+      background-color 150ms ease-out,
+      box-shadow 150ms ease-out;
+  }
+
+  /* Clicking a removable insight deletes it; signal it on hover */
+  .marker-insight-removable {
+    @apply cursor-pointer;
+  }
+
+  .marker-insight-removable:hover {
+    @apply bg-yellow-300/80;
+    box-shadow: inset 0 -1.5px 0 rgb(161 98 7 / 0.6); /* yellow-700 baseline */
+  }
+}
+
+/* Remove backticks from prose code elements - must be outside @layer to override Tailwind Typography */
+.prose code::before,
+.prose code::after {
+  content: '';
+}
+
+/* KaTeX display math */
+.katex-display-wrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.prose .katex {
+  font-size: 1em;
+}
+
+/* Thinking dots animation for LLM response loading */
+@keyframes thinking-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.thinking-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: rgb(156 163 175); /* gray-400 */
+  animation: thinking-bounce 1.4s ease-in-out infinite;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Research view sheets (kickstart, document library): lift off the desk */
+@keyframes sheet-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-overlay-enter {
+  animation: sheet-overlay-enter 0.18s ease-out;
+}
+
+@keyframes sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sheet-enter {
+  animation: sheet-enter 0.22s ease-out;
+}
+
+/* Kickstart modal: proposed rows cascade in (delay set inline per row) */
+@keyframes kickstart-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kickstart-row-enter {
+  animation: kickstart-row-enter 0.3s ease-out backwards;
+}
+
+/* Kickstart modal: pencil-stroke skeleton lines while the LLM drafts */
+@keyframes kickstart-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.kickstart-skeleton {
+  background: linear-gradient(90deg, #e7e5e4 30%, #f1efe9 50%, #e7e5e4 70%);
+  background-size: 200% 100%;
+  animation: kickstart-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Tooltips: a short lift as the box appears. Moving between neighbouring
+   triggers reuses the same node, so the animation plays once per run. */
+@keyframes tooltip-enter {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-enter {
+  animation: tooltip-enter 0.09s ease-out;
+}

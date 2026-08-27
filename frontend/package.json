@@ -1,0 +1,49 @@
+{
+  "name": "talleyrand",
+  "version": "0.5",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.9",
+  "dependencies": {
+    "hast-util-from-html": "^2.0.3",
+    "hast-util-to-string": "^3.0.1",
+    "katex": "^0.16.28",
+    "openapi-fetch": "^0.15.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-markdown": "^10.1.0",
+    "react-router": "^7.9.3",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0",
+    "zustand": "^5.0.8"
+  },
+  "scripts": {
+    "start": "vite --host",
+    "build": "tsc -b && vite build",
+    "generate-openapi": "pnpm dlx openapi-typescript http://localhost:8000/backend/openapi.json -o src/api/schema.d.ts",
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/hast": "^3.0.4",
+    "@types/katex": "^0.16.8",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.4",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  }
+}
