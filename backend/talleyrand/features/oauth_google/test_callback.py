@@ -18,7 +18,16 @@ client = TestClient(app)
 
 
 def _get_oauth_state_and_token(next_url: str = "http://localhost:3000/home"):
-    """Helper to get oauth_state cookie and state token from redirect_url endpoint."""
+    """
+    Helper to get oauth_state cookie and state token from redirect_url endpoint.
+
+    The client is shared by every test in this module, so the cookie the
+    endpoint just set is stripped from its jar before returning. Each test then
+    states exactly which cookie it sends, and the ones that send none — the
+    login-CSRF cases — really send none. Left in the jar, the cookie replays on
+    the next request whenever it is not marked Secure, and those tests pass a
+    valid cookie to the very check they exist to exercise.
+    """
     response = client.get(
         f"/oauth/google/redirect_url?next_url={next_url}",
         follow_redirects=False,
@@ -26,6 +35,7 @@ def _get_oauth_state_and_token(next_url: str = "http://localhost:3000/home"):
     assert response.status_code == 307
 
     oauth_state_cookie = response.cookies.get("oauth_state")
+    client.cookies.clear()
     location = response.headers["location"]
     qs_data = parse_qs(urlparse(location).query)
     state_token = qs_data["state"][0]
@@ -262,6 +272,9 @@ async def test_callback_login_csrf_attack_prevention():
 
     assert data.status_code == 307
     assert "error_message" in data.headers["location"]
+    # The missing cookie must be what stopped it — any other error would mean
+    # the request got as far as exchanging the attacker's code with Google.
+    assert "cookie" in data.headers["location"].lower()
 
 
 @pytest.mark.asyncio

@@ -26,6 +26,12 @@ services:
     environment:
       PYTHONUNBUFFERED: 1
 
+      # The container's venv lives in its own volume, but /app is the host's
+      # backend/ — without this the container writes its own interpreter path
+      # into backend/.pdm-python and every pdm command on the host then reports
+      # a broken interpreter.
+      PDM_PYTHON: /app/.venv/bin/python
+
       # For easier debugging
       COOKIE_SECURE: false
       MONGODB_URL: mongodb://admin:admin@mongodb:27017

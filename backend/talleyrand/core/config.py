@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     # JWT Settings
     jwt_secret_key: str = Field(
         ...,
-        description="Secret key used for signing JWT tokens. Change in production.",
+        description=(
+            "Secret key used for signing JWT tokens. "
+            "Must be a unique random value per deployment, generated with `openssl rand -hex 32`."
+        ),
+        min_length=32,
     )
     jwt_algorithm: str = Field(
         default="HS256",
