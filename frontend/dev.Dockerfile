@@ -1,8 +1,8 @@
-FROM node:22-alpine
+FROM node:22.21.1-alpine
 
 WORKDIR /app
 
-RUN npm install -g pnpm@latest-10
+RUN npm install -g pnpm@9.15.9
 
 # Expose port
 EXPOSE 3000

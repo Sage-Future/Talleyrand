@@ -30,6 +30,7 @@ from anthropic.types.beta import (
     BetaFallbackBlock,
     BetaFallbackInfo,
     BetaFallbackMessageIterationUsage,
+    BetaFallbackRefusalTrigger,
     BetaMessageDeltaUsage,
     BetaRawContentBlockStartEvent,
     BetaRawMessageDeltaEvent,
@@ -120,6 +121,7 @@ def _fallback(to_model: str) -> BetaRawContentBlockStartEvent:
         content_block=BetaFallbackBlock(
             type="fallback",
             to=BetaFallbackInfo(model=to_model),
+            trigger=BetaFallbackRefusalTrigger(type="refusal"),
             **{"from": BetaFallbackInfo(model="claude-opus-5")},
         ),
     )
