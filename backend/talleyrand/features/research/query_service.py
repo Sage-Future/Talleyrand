@@ -4,6 +4,7 @@ Query service for the research view.
 
 import logging
 from collections.abc import AsyncGenerator
+from dataclasses import replace
 from typing import Literal
 
 from talleyrand.core.llm import (
@@ -46,13 +47,20 @@ async def do_research_query(
     api_key = resolve_api_key(node_llm_model, openai_api_key, anthropic_api_key)
 
     instructions = RESEARCH_ANSWERER_INSTRUCTIONS
-    user_prompt = build_research_context(graph, node_id)
+    context = build_research_context(graph, node_id)
 
-    user_prompt = await fit_to_context(
-        model=node_llm_model,
-        api_key=api_key,
-        system_prompt=instructions,
-        user_prompt=user_prompt,
+    # A case can hold more reading than the model can take. The documents are
+    # what gives way: the brief and the tree are what the question is about.
+    context = replace(
+        context,
+        documents=await fit_to_context(
+            model=node_llm_model,
+            api_key=api_key,
+            system_prompt=instructions,
+            keep_before=context.brief,
+            trimmable=context.documents,
+            keep_after=context.body,
+        ),
     )
 
     pdf_documents = [
@@ -65,7 +73,8 @@ async def do_research_query(
         model=node_llm_model,
         api_key=api_key,
         instructions=instructions,
-        user_prompt=user_prompt,
+        cached_prefix=context.case_prefix,
+        user_prompt=context.body,
         pdf_documents=pdf_documents,
         web_search_enabled=web_search_enabled,
         verbosity=verbosity,

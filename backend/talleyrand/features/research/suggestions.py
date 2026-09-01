@@ -83,7 +83,7 @@ async def get_research_suggestions(
     selection: SelectionDTO | None = None,
 ) -> ResearchSuggestionSchema:
     """Generate follow-up question suggestions for a read answer."""
-    context = build_research_context(graph, str(node_id))
+    context = build_research_context(graph, str(node_id)).text
 
     extra_sections: list[str] = []
 

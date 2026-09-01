@@ -377,26 +377,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/research/jobs/concurrency": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Set Concurrency
-         * @description Update the background concurrency limit and start queued jobs that now fit.
-         */
-        post: operations["set_concurrency_research_jobs_concurrency_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/research/{graph_id}/stream-ticket": {
         parameters: {
             query?: never;
@@ -527,14 +507,6 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * ConcurrencyRequestDTO
-         * @description Request body to update the background generation concurrency limit.
-         */
-        ConcurrencyRequestDTO: {
-            /** Limit */
-            limit: number;
-        };
-        /**
          * DeclinedQuestionDTO
          * @description A suggestion the user explicitly declined; feeds the suggester as an anti-target.
          */
@@ -616,11 +588,6 @@ export interface components {
              * @enum {string}
              */
             verbosity: "low" | "medium";
-            /**
-             * Concurrencylimit
-             * @default 5
-             */
-            concurrencyLimit: number;
             /**
              * Cheatsheet
              * @default false
@@ -1830,39 +1797,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobDTO"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    set_concurrency_research_jobs_concurrency_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConcurrencyRequestDTO"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConcurrencyRequestDTO"];
                 };
             };
             /** @description Validation Error */

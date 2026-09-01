@@ -72,7 +72,7 @@ def _build_report_user_content(graph: GraphNoId, guidance: str) -> str:
     """Overview context (brief, tree with answers + inline highlights, read order)
     plus the report-only DECLINED and consolidated HIGHLIGHTS sections. An optional
     user guidance line, when given, leads as the top-priority steering signal."""
-    context = build_research_context(graph, None)
+    context = build_research_context(graph, None).text
     tree = build_question_tree(graph)
 
     sections: list[str] = []

@@ -40,13 +40,25 @@ from pydantic import BaseModel
 
 from talleyrand.core.llm_logging import log_prompt, log_response, log_structured_response
 from talleyrand.core.model_settings import ModelConfig, Provider
-from talleyrand.core.token_counter import truncate_to_token_limit
+from talleyrand.core.token_counter import count_tokens
 
 logger = logging.getLogger(__name__)
 
 # Anthropic requires an explicit output-token budget on every request.
 # 64K fits the streaming output ceiling of all supported Claude models.
 ANTHROPIC_MAX_OUTPUT_TOKENS = 64_000
+
+# Trimming a prompt to fit (fit_to_context). The step is what keeps a trimmed
+# prompt cacheable across a case's questions; it costs at most one step's worth
+# of content, negligible against a window measured in hundreds of thousands of
+# tokens. The minimum cut keeps a bad chars-per-token estimate from stalling
+# the loop.
+TRIM_STEP_CHARS = 20_000
+MIN_TRIM_CHARS = 300
+TRIMMED_NOTICE = (
+    "\n  [... the attached documents are cut off here: the case is larger than "
+    "this model's context window ...]\n\n"
+)
 
 # Anthropic has no verbosity parameter; low verbosity is requested via the system prompt.
 ANTHROPIC_CONCISE_INSTRUCTION = (
@@ -274,57 +286,77 @@ async def fit_to_context(
     model: ModelConfig,
     api_key: str,
     system_prompt: str,
-    user_prompt: str,
+    keep_before: str,
+    trimmable: str,
+    keep_after: str,
     reserve_tokens: int = 100,
 ) -> str:
-    """Truncate user_prompt from the start to fit the model's context window."""
+    """
+    Shrink `trimmable` until `keep_before + trimmable + keep_after` fits the
+    model's context window, and return the section that survived.
+
+    Only the middle section gives way, so callers put there the one material
+    they can afford to lose. In research that is the attached documents: a case
+    too large for the window still reaches the model with its brief and its
+    whole question tree intact, minus however much of its reading it had to
+    leave behind.
+
+    A section trimmed to nothing is not an error: the prompt goes out at
+    whatever size remains, and the provider rejects it if it still does not fit.
+    """
     if model.provider == "openai":
-        # tiktoken counting is CPU-bound — keep it off the event loop
-        return await asyncio.to_thread(
-            _fit_openai, model, system_prompt, user_prompt, reserve_tokens
-        )
-    return await _fit_anthropic(model, api_key, system_prompt, user_prompt, reserve_tokens)
 
+        async def count(prompt: str) -> int:
+            # tiktoken counting is CPU-bound — keep it off the event loop
+            return await asyncio.to_thread(count_tokens, system_prompt + prompt, model.id)
 
-def _fit_openai(
-    model: ModelConfig, system_prompt: str, user_prompt: str, reserve_tokens: int
-) -> str:
-    return truncate_to_token_limit(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        model=model.id,
-        reserve_tokens=reserve_tokens,
-    )
+        available_tokens = model.context_tokens - reserve_tokens
+    else:
+        client = AsyncAnthropic(api_key=api_key)
 
+        async def count(prompt: str) -> int:
+            return await _count_anthropic_tokens(client, model, system_prompt, prompt)
 
-async def _fit_anthropic(
-    model: ModelConfig, api_key: str, system_prompt: str, user_prompt: str, reserve_tokens: int
-) -> str:
-    client = AsyncAnthropic(api_key=api_key)
-    # Input and output share the context window, so reserve the output budget too
-    available_tokens = model.context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS - reserve_tokens
+        # Input and output share the context window, so reserve the output budget too
+        available_tokens = model.context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS - reserve_tokens
 
-    total_tokens = await _count_anthropic_tokens(client, model, system_prompt, user_prompt)
+    total_tokens = await count(keep_before + trimmable + keep_after)
     if total_tokens <= available_tokens:
-        return user_prompt
+        return trimmable
 
     logger.warning(
-        f"User prompt exceeds token limit: {total_tokens} > {available_tokens}. "
-        "Truncating from start..."
+        f"Prompt exceeds {model.id}'s context window: {total_tokens} > {available_tokens}. "
+        "Trimming the trimmable section..."
     )
     initial_tokens = total_tokens
-    while total_tokens > available_tokens and len(user_prompt) > 300:
-        chars_per_token = len(user_prompt) / total_tokens
+    kept = len(trimmable)
+    while total_tokens > available_tokens and kept > 0:
+        chars_per_token = (len(keep_before) + kept + len(keep_after)) / total_tokens
         excessive_tokens = total_tokens - available_tokens
-        chars_to_remove = max(int(excessive_tokens * chars_per_token), 300)
-        user_prompt = user_prompt[chars_to_remove:]
-        total_tokens = await _count_anthropic_tokens(client, model, system_prompt, user_prompt)
+        chars_to_remove = max(int(excessive_tokens * chars_per_token), MIN_TRIM_CHARS)
+        kept = max(kept - chars_to_remove, 0)
+        total_tokens = await count(keep_before + _trim(trimmable, kept) + keep_after)
+
+    # Every question in a case builds a prompt that differs only in its own
+    # question block — a few hundred characters. Rounding the cut down to a
+    # fixed step lands them all on the same boundary, so the trimmed section
+    # stays byte-identical between them and they share one cache entry instead
+    # of each writing its own. Rounding only ever removes more, so it still fits.
+    if kept >= TRIM_STEP_CHARS:
+        kept -= kept % TRIM_STEP_CHARS
 
     logger.info(
-        f"Truncated {initial_tokens - total_tokens} tokens from user prompt "
-        f"({initial_tokens} -> {total_tokens})"
+        f"Trimmed the prompt from {initial_tokens} tokens to fit {available_tokens}: "
+        f"{len(trimmable)} -> {kept} characters in the trimmable section"
     )
-    return user_prompt
+    return _trim(trimmable, kept)
+
+
+def _trim(trimmable: str, kept: int) -> str:
+    """The first `kept` characters of a section, told plainly where it was cut."""
+    if kept >= len(trimmable):
+        return trimmable
+    return trimmable[:kept] + TRIMMED_NOTICE
 
 
 async def _count_anthropic_tokens(
@@ -344,6 +376,7 @@ async def stream_text(
     model: ModelConfig,
     api_key: str,
     instructions: str,
+    cached_prefix: str,
     user_prompt: str,
     pdf_documents: list[PdfAttachment],
     web_search_enabled: bool,
@@ -351,6 +384,12 @@ async def stream_text(
 ) -> AsyncGenerator[StreamChunk, None]:
     """
     Send a streaming chat request and return a generator of answer chunks.
+
+    The prompt the model reads is cached_prefix + user_prompt. Callers put in
+    cached_prefix the opening stretch that repeats verbatim across requests —
+    for research, a case's brief and documents — so the provider can charge it
+    once and re-read it on every later question instead of re-reading the whole
+    case each time. Passing "" is fine and simply caches nothing.
 
     Text arrives as TextChunks; whatever the model's web searches surfaced
     arrives alongside as SourceChunks, which carry no answer text and are
@@ -363,7 +402,9 @@ async def stream_text(
         caller=caller,
         model=model.id,
         system_prompt=instructions,
-        user_prompt="[structured input with PDFs]" if pdf_documents else user_prompt,
+        user_prompt="[structured input with PDFs]"
+        if pdf_documents
+        else cached_prefix + user_prompt,
     )
     if pdf_documents:
         logger.info(f"Attaching {len(pdf_documents)} PDF document(s) to request")
@@ -374,7 +415,9 @@ async def stream_text(
             model=model,
             api_key=api_key,
             instructions=instructions,
-            user_prompt=user_prompt,
+            # The Responses API caches long prompt prefixes on its own, so the
+            # split carries no meaning here — send the prompt whole.
+            user_prompt=cached_prefix + user_prompt,
             pdf_documents=pdf_documents,
             web_search_enabled=web_search_enabled,
             verbosity=verbosity,
@@ -384,6 +427,7 @@ async def stream_text(
         model=model,
         api_key=api_key,
         instructions=instructions,
+        cached_prefix=cached_prefix,
         user_prompt=user_prompt,
         pdf_documents=pdf_documents,
         web_search_enabled=web_search_enabled,
@@ -498,6 +542,7 @@ async def _stream_anthropic(
     model: ModelConfig,
     api_key: str,
     instructions: str,
+    cached_prefix: str,
     user_prompt: str,
     pdf_documents: list[PdfAttachment],
     web_search_enabled: bool,
@@ -509,7 +554,26 @@ async def _stream_anthropic(
         instructions += ANTHROPIC_CONCISE_INSTRUCTION
     instructions += ANTHROPIC_MARKDOWN_LINK_INSTRUCTION
 
-    content: list[dict] = [{"type": "text", "text": user_prompt}]
+    content: list[dict] = []
+    if cached_prefix:
+        # The cache breakpoint. Anthropic caches nothing unless a request marks
+        # where its reusable prefix ends, and it matches on exact bytes: tools
+        # and system render before this block, so all three are cached together
+        # and every later question in the case reads them back instead of
+        # paying for them again. Everything after the breakpoint — the tree,
+        # the question — is the part that actually changes.
+        content.append(
+            {
+                "type": "text",
+                "text": cached_prefix,
+                # 5 minutes. A case's questions run in bursts and each read
+                # restarts the clock, so the entry stays warm for as long as
+                # the user keeps working; the hour-long TTL costs twice as much
+                # to write and would only pay for itself across longer gaps.
+                "cache_control": {"type": "ephemeral", "ttl": "5m"},
+            }
+        )
+    content.append({"type": "text", "text": user_prompt})
     for doc in pdf_documents:
         content.append(
             {
