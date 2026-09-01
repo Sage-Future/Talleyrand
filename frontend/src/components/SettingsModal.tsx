@@ -11,6 +11,7 @@ import {
 import { AuthService } from '../services/authService';
 import { saveNow } from '../services/autosaveSubscriptions';
 import { useAuth } from '../contexts/AuthContext';
+import { getConsent, isAnalyticsConfigured, setConsent } from '../services/analyticsConsent';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -178,8 +179,17 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
   const [summarizeParents, setSummarizeParents] = useState(
     () => localStorage.getItem('summarize_parents') === 'true'
   );
+  const [analyticsAllowed, setAnalyticsAllowed] = useState(() => getConsent() === 'granted');
 
   const currentDefaultModel = MODELS.find(m => m.id === defaultModel) ?? MODELS[0];
+
+  // This modal stays mounted while closed, so its initial state is read once,
+  // before the visitor has answered the consent banner. Consent also changes
+  // outside the modal (the banner, the landing page's Cookies link), so read
+  // the stored answer back every time the modal opens.
+  useEffect(() => {
+    if (isOpen) setAnalyticsAllowed(getConsent() === 'granted');
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -206,6 +216,12 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
     localStorage.setItem('verbosity', verbosity);
     localStorage.setItem('background_concurrency', backgroundConcurrency.toString());
     useResearchStore.getState().setSummarizeParents(summarizeParents);
+    // Only when the toggle was actually moved. Saving unrelated settings must
+    // not answer the consent question for a visitor who has not answered it —
+    // that would dismiss the banner on their behalf.
+    if (isAnalyticsConfigured() && analyticsAllowed !== (getConsent() === 'granted')) {
+      setConsent(analyticsAllowed ? 'granted' : 'denied');
+    }
     researchGenerationService.concurrencyChanged();
 
     onSave();
@@ -377,6 +393,22 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
               </div>
             </div>
           </div>
+
+          {/* Privacy */}
+          {isAnalyticsConfigured() && (
+            <div>
+              <div className="mb-2.5">
+                <SectionLabel>Privacy</SectionLabel>
+              </div>
+              <ToggleRow
+                id="analyticsAllowed"
+                checked={analyticsAllowed}
+                onChange={setAnalyticsAllowed}
+                label="Allow usage analytics"
+                description="Google Analytics counts visits and shows which parts of the app get used. It never receives your questions, answers, or documents. Turning this off also clears the cookies it set."
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}

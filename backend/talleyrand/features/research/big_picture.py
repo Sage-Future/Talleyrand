@@ -104,7 +104,7 @@ async def get_big_picture_suggestions(
     closed threads: the model is told to leave them alone (prompting) and any
     suggestion that still lands on one is dropped (post-filtering).
     """
-    context = build_research_context(graph, None)
+    context = build_research_context(graph, None).text
     tree = build_question_tree(graph)
 
     content_by_id = {str(content.id): content for content in graph.node_contents}
