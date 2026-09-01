@@ -7,6 +7,7 @@ import { ResearchPage } from '../components/research/ResearchPage';
 import { LandingPage } from '../components/LandingPage';
 import { SharedCaseViewer } from '../components/SharedCaseViewer';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ConsentBanner } from '../components/ConsentBanner';
 import { TooltipLayer } from '../components/ui/TooltipLayer';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { UnauthorizedEvent } from '../events/UnauthorizedEvent';
@@ -56,6 +57,7 @@ const RootLayout: FC = () => (
     <AuthEventHandler />
     <Outlet />
     <TooltipLayer />
+    <ConsentBanner />
   </AuthProvider>
 );
 

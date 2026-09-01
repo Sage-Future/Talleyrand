@@ -15,6 +15,7 @@ from talleyrand.core.config import settings
 from talleyrand.core.llm import SourceChunk, TextChunk, WebSource
 from talleyrand.features.research.generation import manager as manager_module
 from talleyrand.features.research.generation.manager import (
+    BACKGROUND_CONCURRENCY,
     STREAM_STALLED_ERROR,
     AnswerParams,
     GenerationJobManager,
@@ -222,3 +223,70 @@ def _drain(channel: JobChannel) -> list[dict]:
     while not channel.events.empty():
         events.append(channel.events.get_nowait())
     return events
+
+
+@pytest.mark.asyncio
+async def test_background_answers_beyond_the_cap_wait_their_turn(monkeypatch):
+    """
+    The cap is what bounds the instance's peak memory: every running generation
+    holds its own copy of the case and ships it to the provider. Nothing may
+    raise it — there is no per-user limit any more, only this constant.
+    """
+    mgr = GenerationJobManager()
+
+    repo = AsyncMock()
+    repo.delete_unless_done.return_value = 0
+    monkeypatch.setattr(mgr, "_job_repo", lambda: repo)
+    # Spawning would start a real generation; only the queueing decision is under test.
+    spawned: list[str] = []
+    monkeypatch.setattr(
+        mgr,
+        "_spawn_answer",
+        lambda job: (spawned.append(job.record.id), setattr(job.record, "status", "running")),
+    )
+
+    params = AnswerParams(
+        openai_api_key="k",
+        anthropic_api_key="",
+        web_search_enabled=False,
+        verbosity="low",
+        cheat_sheet=False,
+    )
+    records = [
+        await mgr.start_answer_job(
+            graph_id="g1",
+            user_id="u1",
+            node_id=f"n{index}",
+            background=True,
+            params=params,
+            existing_records=[],
+        )
+        for index in range(BACKGROUND_CONCURRENCY + 2)
+    ]
+
+    assert len(spawned) == BACKGROUND_CONCURRENCY
+    assert spawned == [record.id for record in records[:BACKGROUND_CONCURRENCY]]
+    # The rest wait in order, holding nothing.
+    assert list(mgr.user_queues["u1"]) == [record.id for record in records[BACKGROUND_CONCURRENCY:]]
+
+
+@pytest.mark.asyncio
+async def test_a_finished_answer_hands_its_slot_to_the_next_in_line(monkeypatch):
+    mgr = GenerationJobManager()
+    running = new_answer_record("g1", "u1", "n1")
+    running.status = "running"
+    mgr.jobs[running.id] = RuntimeJob(record=running, background=True)
+    mgr.answer_job_by_node[("g1", "n1")] = running.id
+
+    waiting = new_answer_record("g1", "u1", "n2")
+    mgr.jobs[waiting.id] = RuntimeJob(record=waiting, background=True)
+    mgr.user_queues["u1"] = deque([waiting.id])
+
+    spawned: list[str] = []
+    monkeypatch.setattr(mgr, "_spawn_answer", lambda job: spawned.append(job.record.id))
+
+    mgr._remove_job(running.id)
+    mgr._pump("u1")
+
+    assert spawned == [waiting.id]
+    assert "u1" not in mgr.user_queues

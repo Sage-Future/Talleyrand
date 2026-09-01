@@ -19,7 +19,6 @@ from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.models import GraphDataRepository, get_graph_repo
 from talleyrand.features.research.cheat_sheet import has_thread_to_summarize
 from talleyrand.features.research.generation.dtos import (
-    ConcurrencyRequestDTO,
     GenerateAnswerRequestDTO,
     JobDTO,
     StreamTicketDTO,
@@ -70,7 +69,6 @@ async def generate_answer(
         user_id=user.email,
         node_id=str(node_id),
         background=payload.background,
-        concurrency_limit=payload.concurrency_limit,
         params=AnswerParams(
             openai_api_key=x_openai_api_key or "",
             anthropic_api_key=x_anthropic_api_key or "",
@@ -150,17 +148,6 @@ async def suggest_big_picture(
         params=SuggestionParams(openai_api_key=openai_api_key, request_more=False),
     )
     return to_job_dto(record, manager.live_job_ids())
-
-
-async def set_concurrency(
-    payload: ConcurrencyRequestDTO,
-    user: Annotated[User, Depends(auth_app.require_auth)],
-) -> ConcurrencyRequestDTO:
-    """Update the background concurrency limit and start queued jobs that now fit."""
-    if payload.limit < 1:
-        raise HTTPException(status_code=400, detail="Concurrency limit must be at least 1")
-    manager.set_concurrency(user.email, payload.limit)
-    return payload
 
 
 async def create_stream_ticket(

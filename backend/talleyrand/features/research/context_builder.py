@@ -90,6 +90,42 @@ def ancestors_of(tree: QuestionTree, node_id: str) -> list[str]:
     return ancestors
 
 
+@dataclass
+class ResearchContext:
+    """
+    The research user prompt, split where its cache breakpoint goes.
+
+    The brief and the case documents are byte-identical for every question in a
+    case, so together they form the prefix a provider can cache and re-read
+    instead of re-reading the whole case per question. The body — the tree, the
+    read order, the current question — moves with every answer and every ask,
+    and sits after the breakpoint.
+
+    The documents are also the section that gives way when a case outgrows the
+    model's context window: what the user asked, and what the case has already
+    established, must reach the model whole.
+    """
+
+    brief: str
+    documents: str
+    body: str
+
+    @property
+    def case_prefix(self) -> str:
+        """The part every question in this case shares."""
+        return self.brief + self.documents
+
+    @property
+    def text(self) -> str:
+        """The whole prompt, for callers that send it as one block."""
+        return self.case_prefix + self.body
+
+
+def _section(lines: list[str]) -> str:
+    """A prompt section, carrying the blank line that separates it from the next."""
+    return "\n".join(lines) + "\n\n" if lines else ""
+
+
 def format_documents(
     documents: list[DocumentDTO], indent: str, label: str = "DOCUMENTS"
 ) -> list[str]:
@@ -102,7 +138,7 @@ def format_documents(
     return lines
 
 
-def build_research_context(graph: GraphNoId, node_id: str | None) -> str:
+def build_research_context(graph: GraphNoId, node_id: str | None) -> ResearchContext:
     """
     Build the full research user prompt. With a node_id the prompt ends with a
     CURRENT QUESTION block for that question; with None it is the case
@@ -125,14 +161,15 @@ def build_research_context(graph: GraphNoId, node_id: str | None) -> str:
     read_ids = [str(event.node_id) for event in graph.read_history]
     read_set = set(read_ids)
 
-    parts: list[str] = []
-
+    brief_lines: list[str] = []
     if graph.brief.strip():
-        parts.append(f"BRIEF:\n{graph.brief.strip()}\n")
+        brief_lines.append(f"BRIEF:\n{graph.brief.strip()}")
 
+    document_lines: list[str] = []
     if graph.case_documents:
-        parts.extend(format_documents(graph.case_documents, "", label="CASE DOCUMENTS"))
-        parts.append("")
+        document_lines.extend(format_documents(graph.case_documents, "", label="CASE DOCUMENTS"))
+
+    parts: list[str] = []
 
     parts.append("CASE TREE (fixed order; the user's case so far):")
     for tree_node_id in tree.dfs_order:
@@ -195,7 +232,11 @@ def build_research_context(graph: GraphNoId, node_id: str | None) -> str:
                 parts.append(f'    CONTEXT AFTER: "{refs(current_content.parent_selected_suffix)}"')
         parts.append("")
 
-    return "\n".join(parts)
+    return ResearchContext(
+        brief=_section(brief_lines),
+        documents=_section(document_lines),
+        body="\n".join(parts),
+    )
 
 
 def collect_research_pdf_documents(graph: GraphNoId, node_id: str) -> list[DocumentDTO]:

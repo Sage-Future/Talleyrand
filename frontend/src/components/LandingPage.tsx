@@ -6,6 +6,7 @@ import type { DeclineReason } from '../types';
 import { BrandMark } from './BrandMark';
 import { DECLINE_REASONS } from './research/declineReasons';
 import { iconTooltip } from './ui/TooltipLayer';
+import { isAnalyticsConfigured, resetConsent } from '../services/analyticsConsent';
 
 /**
  * Public landing page. It mirrors the research workspace's own look —
@@ -156,6 +157,17 @@ export const LandingPage: FC = () => {
           <GitHubIcon className="icon-optical h-4 w-4" />
           Source on GitHub
         </a>
+        {isAnalyticsConfigured() && (
+          // Withdrawing has to be as easy as accepting was, and a visitor who
+          // never signs in cannot reach the setting inside the app.
+          <button
+            type="button"
+            onClick={resetConsent}
+            className="mx-auto mt-3 block underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600"
+          >
+            Cookies
+          </button>
+        )}
       </footer>
     </div>
   );

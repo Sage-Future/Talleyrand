@@ -58,7 +58,11 @@ from talleyrand.infra.db import get_db
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BACKGROUND_CONCURRENCY = 5
+# How many of a user's background answers may generate at once; the rest queue.
+# Not configurable: each running generation holds its own copy of the case and
+# ships it to the provider, so this number sets the instance's peak memory as
+# much as it sets throughput.
+BACKGROUND_CONCURRENCY = 3
 EMPTY_ANSWER_ERROR = "The model returned an empty answer."
 STREAM_STALLED_ERROR = "The model stopped responding. Please retry."
 
@@ -184,7 +188,6 @@ class GenerationJobManager:
         self.jobs: dict[str, RuntimeJob] = {}
         self.answer_job_by_node: dict[tuple[str, str], str] = {}
         self.channels: dict[str, set[JobChannel]] = {}
-        self.user_limits: dict[str, int] = {}
         self.user_queues: dict[str, deque[str]] = {}
         self._shutting_down = False
 
@@ -232,7 +235,6 @@ class GenerationJobManager:
         user_id: str,
         node_id: str,
         background: bool,
-        concurrency_limit: int,
         params: AnswerParams,
         existing_records: list[GenerationJobRecord],
         force: bool = False,
@@ -247,8 +249,6 @@ class GenerationJobManager:
         job is cancelled and dropped so a fresh one replaces it, rather than
         returning it. Its stored record is then replaced like an error record.
         """
-        self.user_limits[user_id] = concurrency_limit
-
         live_id = self.answer_job_by_node.get((graph_id, node_id))
         if live_id is not None:
             if not force:
@@ -287,14 +287,11 @@ class GenerationJobManager:
             self._remove_job(record.id)
             raise
 
-        if background and self._running_background_count(user_id) >= self._limit(user_id):
+        if background and self._running_background_count(user_id) >= BACKGROUND_CONCURRENCY:
             self.user_queues.setdefault(user_id, deque()).append(record.id)
         else:
             self._spawn_answer(job)
         return record
-
-    def _limit(self, user_id: str) -> int:
-        return self.user_limits.get(user_id, DEFAULT_BACKGROUND_CONCURRENCY)
 
     def _running_background_count(self, user_id: str) -> int:
         return sum(
@@ -318,7 +315,7 @@ class GenerationJobManager:
         if self._shutting_down:
             return
         queue = self.user_queues.get(user_id)
-        while queue and self._running_background_count(user_id) < self._limit(user_id):
+        while queue and self._running_background_count(user_id) < BACKGROUND_CONCURRENCY:
             job_id = queue.popleft()
             job = self.jobs.get(job_id)
             if job is None:
@@ -326,12 +323,6 @@ class GenerationJobManager:
             self._spawn_answer(job)
         if queue is not None and not queue:
             del self.user_queues[user_id]
-
-    def set_concurrency(self, user_id: str, limit: int) -> None:
-        if self._shutting_down:
-            return
-        self.user_limits[user_id] = limit
-        self._pump(user_id)
 
     async def _run_answer(self, job: RuntimeJob) -> None:
         record = job.record

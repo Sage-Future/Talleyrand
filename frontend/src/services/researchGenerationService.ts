@@ -13,15 +13,8 @@ import type { ModelType, ResearchSuggestion, WebSource } from '../types';
 import { queueJobAck, saveNow } from './autosaveSubscriptions';
 import { researchSuggestionService } from './researchSuggestionService';
 
-// Server-side cap on concurrently running background generations.
-const DEFAULT_BACKGROUND_CONCURRENCY = 5;
 // One reconnect attempt per interval while the job stream is down.
 const RECONNECT_DELAY_MS = 2000;
-
-export function getBackgroundConcurrency(): number {
-  const stored = Number(localStorage.getItem('background_concurrency'));
-  return Number.isInteger(stored) && stored >= 1 ? stored : DEFAULT_BACKGROUND_CONCURRENCY;
-}
 
 type JobInfo = components['schemas']['JobDTO'];
 
@@ -207,20 +200,6 @@ class ResearchGenerationService {
     }
   }
 
-  /** Apply a changed concurrency limit immediately (starts queued jobs that now fit). */
-  concurrencyChanged(): void {
-    void client
-      .POST('/research/jobs/concurrency', {
-        body: { limit: getBackgroundConcurrency() },
-      })
-      .then(({ error }) => {
-        if (error) console.error('Failed to update generation concurrency:', error);
-      })
-      .catch(err => {
-        console.error('Failed to update generation concurrency:', err);
-      });
-  }
-
   private async startAnswerJob(
     graphId: string,
     nodeId: string,
@@ -244,7 +223,6 @@ class ResearchGenerationService {
           force,
           webSearchEnabled: isWebSearchEnabled(),
           verbosity: getVerbosity(),
-          concurrencyLimit: getBackgroundConcurrency(),
           cheatSheet: isParentSummaryEnabled(),
         },
       });

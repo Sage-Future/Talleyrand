@@ -16,7 +16,6 @@ class GenerateAnswerRequestDTO(BaseSchema):
     background: bool = False
     web_search_enabled: bool = True
     verbosity: Literal["low", "medium"] = "low"
-    concurrency_limit: int = 5
     # "Summarize parents" is on: also condense the thread above this question
     # into a cheat sheet, as a parallel job.
     cheat_sheet: bool = False
@@ -29,12 +28,6 @@ class SuggestFollowupsRequestDTO(BaseSchema):
     """Request body to start a follow-up suggestion generation."""
 
     request_more: bool = False
-
-
-class ConcurrencyRequestDTO(BaseSchema):
-    """Request body to update the background generation concurrency limit."""
-
-    limit: int
 
 
 class StreamTicketDTO(BaseSchema):
