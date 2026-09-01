@@ -4,10 +4,6 @@ import { type ModelType, MODELS, resolveModelId } from '../config/models';
 import { ModelPicker } from './ui/ModelPicker';
 import { useResearchStore } from '../stores/researchStore';
 import { iconTooltip } from './ui/TooltipLayer';
-import {
-  getBackgroundConcurrency,
-  researchGenerationService,
-} from '../services/researchGenerationService';
 import { AuthService } from '../services/authService';
 import { saveNow } from '../services/autosaveSubscriptions';
 import { useAuth } from '../contexts/AuthContext';
@@ -173,9 +169,6 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
   const [verbosity, setVerbosity] = useState<'low' | 'normal'>(
     () => (localStorage.getItem('verbosity') as 'low' | 'normal') || 'low'
   );
-  const [backgroundConcurrency, setBackgroundConcurrency] = useState(() =>
-    getBackgroundConcurrency()
-  );
   const [summarizeParents, setSummarizeParents] = useState(
     () => localStorage.getItem('summarize_parents') === 'true'
   );
@@ -214,7 +207,6 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
     useResearchStore.getState().setDefaultModel(defaultModel);
     localStorage.setItem('web_search_enabled', webSearchEnabled.toString());
     localStorage.setItem('verbosity', verbosity);
-    localStorage.setItem('background_concurrency', backgroundConcurrency.toString());
     useResearchStore.getState().setSummarizeParents(summarizeParents);
     // Only when the toggle was actually moved. Saving unrelated settings must
     // not answer the consent question for a visitor who has not answered it —
@@ -222,7 +214,6 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
     if (isAnalyticsConfigured() && analyticsAllowed !== (getConsent() === 'granted')) {
       setConsent(analyticsAllowed ? 'granted' : 'denied');
     }
-    researchGenerationService.concurrencyChanged();
 
     onSave();
     onClose();
@@ -362,31 +353,6 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
                   >
                     <option value="normal">Normal</option>
                     <option value="low">Low</option>
-                  </select>
-                  <SelectChevron />
-                </div>
-              </div>
-              <div className="flex items-start justify-between gap-4">
-                <label htmlFor="backgroundConcurrency" className="min-w-0">
-                  <span className="font-serif text-[13.5px] leading-snug text-stone-800">
-                    Parallel requests
-                  </span>
-                  <span className="mt-0.5 block font-serif text-[12px] leading-snug text-stone-500">
-                    How many questions can be answered in the background at once.
-                  </span>
-                </label>
-                <div className="relative flex-shrink-0">
-                  <select
-                    id="backgroundConcurrency"
-                    value={backgroundConcurrency}
-                    onChange={e => setBackgroundConcurrency(Number(e.target.value))}
-                    className="cursor-pointer appearance-none rounded-lg border border-stone-300 bg-white py-1.5 pl-3 pr-8 font-serif text-[13px] text-stone-800 transition-all focus:border-stone-500 focus:shadow-[0_2px_12px_rgba(28,25,23,0.07)] focus:outline-none"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 8, 10].map(n => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
                   </select>
                   <SelectChevron />
                 </div>

@@ -64,12 +64,6 @@ router.add_api_route(
     dependencies=[Depends(limit_suggestions)],
 )
 
-router.add_api_route(
-    "/jobs/concurrency",
-    generation.set_concurrency,
-    methods=["POST"],
-)
-
 # The stream's own credential: minted here on an authenticated request, then
 # spent on the WebSocket URL below (see create_stream_ticket).
 router.add_api_route(
