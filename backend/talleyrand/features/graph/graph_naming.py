@@ -13,7 +13,6 @@ from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.models import (
     GraphDataRepository,
-    GraphDocument,
     get_graph_repo,
 )
 from talleyrand.models.user import User
@@ -22,6 +21,9 @@ NAMING_MODEL = "gpt-5.6-luna"
 # Naming a case is a one-line extraction, so it runs on the cheapest model with
 # reasoning switched off. Left unset, GPT-5.6 would reason at medium by default.
 NAMING_REASONING_EFFORT = "none"
+# The opening of each answer is plenty to name a case by; the cut is made in
+# the database so the answers never travel whole.
+ANSWER_PREVIEW_CHARS = 500
 
 INSTRUCTIONS = (
     TALLEYRAND_DESCRIPTION
@@ -50,20 +52,14 @@ class GraphNameSchema(BaseModel):
     name: str
 
 
-def _build_naming_context(graph: GraphDocument) -> str:
-    """Build context from graph node contents for naming."""
+def _build_naming_context(questions: list[tuple[str, str]]) -> str:
+    """Build naming context from each question and the opening of its answer."""
     context_parts = []
 
-    for node_content in graph.node_contents:
-        if node_content.query:
-            context_parts.append(f"Query: {node_content.query}")
-        if node_content.response:
-            # Truncate long responses to save context
-            response = (
-                node_content.response[:500]
-                if len(node_content.response) > 500
-                else node_content.response
-            )
+    for query, response in questions:
+        if query:
+            context_parts.append(f"Query: {query}")
+        if response:
             context_parts.append(f"Response: {response}")
 
     if not context_parts:
@@ -79,14 +75,14 @@ async def generate_name(
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
 ):
     """Endpoint to generate a name for a graph based on its content."""
-    result = await repo.get_by_id(user.email, graph_id)
+    questions = await repo.get_questions_and_answers(
+        user.email, graph_id, answer_chars=ANSWER_PREVIEW_CHARS
+    )
 
-    if result is None:
+    if questions is None:
         raise HTTPException(status_code=404, detail="Graph not found")
 
-    _, graph_data = result
-
-    context = _build_naming_context(graph_data)
+    context = _build_naming_context(questions)
     user_content = f"""Based on the following case content, generate a concise 2-3 word name:
 
 {context}

@@ -1,21 +1,30 @@
 """
 Integrity tests for the seeded demo cases.
 
-The cases are hand-written data with internal references (edges, cross-link
-tokens, selection and highlight anchors, suggestion parents); these tests
-keep every reference resolvable.
+The cases are checked-in exports of real sessions, full of internal
+references (edges, cross-link tokens, selection and highlight anchors,
+suggestion parents); these tests keep every reference resolvable, so a
+refreshed export that was trimmed or re-ordered by hand fails here rather
+than on the landing page.
 """
 
-import pytest
+from datetime import UTC, datetime
+from pathlib import Path
+from uuid import uuid4
 
+import pytest
+from pydantic_core import to_json
+
+from talleyrand.features.demo_cases import cases as demo_cases
 from talleyrand.features.demo_cases.cases import (
     BIG_FIVE_ID,
     COMPUTE_GOVERNANCE_ID,
+    DEMO_USER_ID,
     FREE_WILL_ID,
     MORAL_PROGRESS_ID,
     build_demo_cases,
 )
-from talleyrand.features.graph.dtos import GraphNoId
+from talleyrand.features.graph.dtos import GraphNoId, ReadEventDTO, SaveGraphDataDTO
 from talleyrand.features.graph.models import GraphDocument
 from talleyrand.features.research.context_builder import build_question_tree
 from talleyrand.features.research.ref_tokens import NODE_ID_REF, OUTLINE_REF
@@ -135,13 +144,21 @@ def test_every_question_is_answered(graph_id: str, document: GraphDocument):
     assert all(content.response for content in document.node_contents)
 
 
-@pytest.mark.parametrize(("graph_id", "document"), CASES, ids=CASE_IDS)
-def test_unresolved_questions_have_pending_suggestions(graph_id: str, document: GraphDocument):
-    """Every question still open for exploration offers suggested follow-ups;
-    resolved questions are settled and offer none."""
-    parents_with_suggestions = {suggestion.parent_node_id for suggestion in document.suggestions}
-    for content in document.node_contents:
-        if content.resolved_at is None:
-            assert content.id in parents_with_suggestions, f"no suggestions: {content.query!r}"
-        else:
-            assert content.id not in parents_with_suggestions
+def test_case_export_loads_verbatim(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A real session's export (the GET /graph/{id} payload) becomes the demo case
+    as-is: same ids, timestamps and content, minus the owner's read history."""
+    _, source = build_demo_cases()[1]
+    source.read_history.append(
+        ReadEventDTO(node_id=source.nodes[0].id, at=datetime(2026, 7, 1, tzinfo=UTC))
+    )
+    export = SaveGraphDataDTO(id=uuid4(), **{**source.model_dump(), "revision": 7})
+    (tmp_path / "moral.json").write_bytes(to_json(export, by_alias=True, exclude={"acked_job_ids"}))
+    monkeypatch.setattr(demo_cases, "_EXPORTS", tmp_path)
+
+    case_id, loaded = demo_cases._from_export("demo-from-export", "moral.json")
+
+    assert case_id == "demo-from-export"
+    assert loaded.user_id == DEMO_USER_ID
+    assert loaded.read_history == []
+    expected = source.model_copy(update={"read_history": []})
+    assert loaded.model_dump(mode="json") == expected.model_dump(mode="json")

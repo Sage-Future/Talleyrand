@@ -15,6 +15,9 @@ interface SettingsModalProps {
   onSave: () => void;
 }
 
+const LEGAL_LINK =
+  'underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-800';
+
 const SectionLabel: FC<{ children: string }> = ({ children }) => (
   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">
     {children}
@@ -361,20 +364,33 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose, onSave 
           </div>
 
           {/* Privacy */}
-          {isAnalyticsConfigured() && (
-            <div>
-              <div className="mb-2.5">
-                <SectionLabel>Privacy</SectionLabel>
-              </div>
-              <ToggleRow
-                id="analyticsAllowed"
-                checked={analyticsAllowed}
-                onChange={setAnalyticsAllowed}
-                label="Allow usage analytics"
-                description="Google Analytics counts visits and shows which parts of the app get used. It never receives your questions, answers, or documents. Turning this off also clears the cookies it set."
-              />
+          <div>
+            <div className="mb-2.5">
+              <SectionLabel>Privacy</SectionLabel>
             </div>
-          )}
+            {isAnalyticsConfigured() && (
+              <div className="mb-3">
+                <ToggleRow
+                  id="analyticsAllowed"
+                  checked={analyticsAllowed}
+                  onChange={setAnalyticsAllowed}
+                  label="Allow usage analytics"
+                  description="Google Analytics counts visits and shows which parts of the app get used. It never receives your questions, answers, or documents. Turning this off also clears the cookies it set."
+                />
+              </div>
+            )}
+            <p className="font-serif text-[12px] leading-relaxed text-stone-500">
+              What Talleyrand stores, and what goes to the model providers, is spelled out in the{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className={LEGAL_LINK}>
+                privacy policy
+              </a>
+              . The{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className={LEGAL_LINK}>
+                terms of service
+              </a>{' '}
+              cover the rest.
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

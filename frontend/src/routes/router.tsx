@@ -6,6 +6,8 @@ import { LatestGraphRedirect } from '../components/LatestGraphRedirect';
 import { ResearchPage } from '../components/research/ResearchPage';
 import { LandingPage } from '../components/LandingPage';
 import { SharedCaseViewer } from '../components/SharedCaseViewer';
+import { PrivacyPage } from '../components/legal/PrivacyPage';
+import { TermsPage } from '../components/legal/TermsPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ConsentBanner } from '../components/ConsentBanner';
 import { TooltipLayer } from '../components/ui/TooltipLayer';
@@ -66,6 +68,8 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       { path: '/', element: <LandingPage /> },
+      { path: '/privacy', element: <PrivacyPage /> },
+      { path: '/terms', element: <TermsPage /> },
       {
         path: '/login',
         element: (

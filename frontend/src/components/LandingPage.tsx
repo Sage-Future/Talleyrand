@@ -7,6 +7,7 @@ import { BrandMark } from './BrandMark';
 import { DECLINE_REASONS } from './research/declineReasons';
 import { iconTooltip } from './ui/TooltipLayer';
 import { isAnalyticsConfigured, resetConsent } from '../services/analyticsConsent';
+import { REPO_URL } from '../config/constants';
 
 /**
  * Public landing page. It mirrors the research workspace's own look —
@@ -76,7 +77,7 @@ export const LandingPage: FC = () => {
             >
               open-source
             </a>
-            , but you need your own OpenAI or Anthropic key.
+            , but you need your own OpenAI key (Anthropic optional, for Claude answers).
           </p>
         </div>
 
@@ -157,17 +158,21 @@ export const LandingPage: FC = () => {
           <GitHubIcon className="icon-optical h-4 w-4" />
           Source on GitHub
         </a>
-        {isAnalyticsConfigured() && (
-          // Withdrawing has to be as easy as accepting was, and a visitor who
-          // never signs in cannot reach the setting inside the app.
-          <button
-            type="button"
-            onClick={resetConsent}
-            className="mx-auto mt-3 block underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600"
-          >
-            Cookies
-          </button>
-        )}
+        <div className="mt-3 flex items-center justify-center gap-4">
+          <Link to="/privacy" className={FOOTER_LINK}>
+            Privacy
+          </Link>
+          <Link to="/terms" className={FOOTER_LINK}>
+            Terms
+          </Link>
+          {isAnalyticsConfigured() && (
+            // Withdrawing has to be as easy as accepting was, and a visitor who
+            // never signs in cannot reach the setting inside the app.
+            <button type="button" onClick={resetConsent} className={FOOTER_LINK}>
+              Cookies
+            </button>
+          )}
+        </div>
       </footer>
     </div>
   );
@@ -184,9 +189,8 @@ const DEMO_CASE_ROUTES = {
   freeWill: '/shared/demo-free-will',
 } as const;
 
-// The public repository, so a visitor can check the open-source claim, star it,
-// or self-host without going looking for it.
-const REPO_URL = 'https://github.com/Sage-Future/Talleyrand';
+const FOOTER_LINK =
+  'underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600';
 
 // The workspace's primary action: an ink pill that lifts on hover.
 const PILL_BTN =
@@ -648,27 +652,46 @@ interface BranchFollowUp {
   answer: ReactNode;
 }
 
+// Excerpts of the real answers in the moral-progress case; an ellipsis marks
+// where a passage is skipped.
 const BRANCH_FOLLOW_UPS: BranchFollowUp[] = [
-  {
-    question: 'How would we tell better reasoning apart from the winners writing history?',
-    answer: (
-      <>
-        One test: whether a change cost its &ldquo;winners&rdquo; anything. That&apos;s exactly the
-        fact you flagged — Britain enforced abolition for decades at real cost{' '}
-        <RefChip>Did abolition happen for moral reasons or economic ones?</RefChip> — and
-        self-congratulating history rarely sends the victors a bill. Follow the sacrifices.
-      </>
-    ),
-  },
   {
     question: 'Are there moral changes that later reversed?',
     answer: (
       <>
-        Plenty. Eugenics spent decades as the progressive, scientific position before it collapsed.
-        Religious tolerance narrowed for centuries before it widened again — an earlier thread here
-        tracked that one <RefChip state="resolved">Do moral circles only ever expand?</RefChip> — so
-        moral change is no ratchet. But that rules out inevitability, not progress: gains are kept
-        by defending them, never owed to us.
+        <p>
+          …<strong>The pattern is the interesting part.</strong> In almost none of these did the
+          losing side win the argument back. Redemption produced terror, fraud, and Northern
+          exhaustion — not a refutation of Black citizenship. The Nuremberg Laws refuted nothing.
+          Reversals are power reversals, not justification reversals: what changed was who could
+          enforce what, usually when a new material incentive appeared (Baltic grain, sugar) or an
+          old enforcement cost got too high (troops out of the South).
+        </p>
+        <p>
+          …Whether the <em>causes</em> of reversal are the same as the causes of the original change
+          is where <RefChip>Did abolition happen for moral reasons or economic ones?</RefChip> goes.
+        </p>
+      </>
+    ),
+  },
+  {
+    question: 'Did abolition happen for moral reasons or economic ones?',
+    answer: (
+      <>
+        <p>
+          <strong>
+            The dichotomy is doing the work of hiding a distinction: <em>motive</em> vs.{' '}
+            <em>opportunity</em>.
+          </strong>{' '}
+          Almost nobody in the historiography now thinks abolitionists were secretly economic
+          actors. The live question is why their old arguments suddenly won.
+        </p>
+        <p>
+          …<strong>Where economics genuinely enters</strong> is the inverse of Williams: industrial
+          Britain grew a large constituency with no stake in the plantations, and Manchester and
+          Birmingham petitioned in numbers the planters couldn&apos;t match. Not &quot;slavery
+          ceased to pay&quot; but &quot;the people it paid ceased to control the state.&quot;
+        </p>
       </>
     ),
   },
@@ -763,16 +786,25 @@ const BranchDemo: FC = () => {
             Is moral progress real, or just moral change?
           </div>
         </div>
-        <div ref={answerRef} className="text-[15px] leading-relaxed text-stone-700">
-          Abolition looks like progress from inside our own morality — but every era&apos;s morality
-          approves of itself, so that alone proves little. The stronger case is that{' '}
-          <mark
-            className={insight ? 'marker-child-selection marker-insight' : 'marker-child-selection'}
-          >
-            some moral changes track better reasoning, not just changed tastes
-          </mark>
-          : wider evidence, fewer factual mistakes, more consistency. If so, progress is real but
-          rarer than we&apos;d like.
+        <div ref={answerRef} className="space-y-2.5 text-[15px] leading-relaxed text-stone-700">
+          <p>
+            <strong>
+              Short answer: yes for abolition, on a standard the losers could have accepted; no for
+              &quot;the moral circle expands&quot; as a general law.
+            </strong>
+          </p>
+          <p>
+            First, deflate the deflation. &quot;Every generation thinks it&apos;s more moral&quot;
+            is true of science too, and there the inference from <em>confident</em> to{' '}
+            <em>deluded</em> obviously fails.{' '}
+            <mark
+              className={
+                insight ? 'marker-child-selection marker-insight' : 'marker-child-selection'
+              }
+            >
+              The pattern of self-congratulation is evidence of bias, not evidence of no fact.
+            </mark>
+          </p>
         </div>
 
         {insight && (
@@ -813,9 +845,9 @@ const BranchDemo: FC = () => {
                 </div>
               ) : (
                 <div>
-                  <p className="kickstart-row-enter text-[13.5px] leading-relaxed text-stone-700">
+                  <div className="kickstart-row-enter space-y-2 text-[13.5px] leading-relaxed text-stone-700">
                     {thread.answer}
-                  </p>
+                  </div>
                   <p className="mt-2.5 font-sans text-[12px] leading-relaxed text-stone-400">
                     The brief, attached docs, earlier threads, your highlights, and your interaction
                     history were already in the AI&apos;s view when it wrote this answer.
@@ -959,9 +991,11 @@ interface FrontierNode {
   depth: number;
   state: QState;
   query: string;
-  answer: ReactNode | null;
+  answer: ReactNode;
 }
 
+// The Big Five case's tree, in the frontier's order, with excerpts of its
+// real answers; an ellipsis marks where a passage is skipped.
 const FRONTIER_NODES: FrontierNode[] = [
   {
     id: 'root',
@@ -970,36 +1004,55 @@ const FRONTIER_NODES: FrontierNode[] = [
     query: 'What do Big Five traits actually predict?',
     answer: (
       <>
-        Real outcomes, but modestly: conscientiousness predicts job and school performance,
-        neuroticism predicts relationship strain. Almost nothing crosses r = .3.
+        Effects are real and mostly replicate, but they live in the r = 0.1–0.3 band. … Two
+        structural facts worth holding onto. First, the workhorses are Conscientiousness and
+        Neuroticism; Openness and Agreeableness predict tastes and relationships more than
+        achievement.
       </>
     ),
   },
   {
     id: 'effect-size',
     depth: 1,
-    state: 'ready',
+    state: 'read',
     query: 'Is a correlation of .3 big or small?',
     answer: (
       <>
-        Both. It explains &ldquo;only 9% of variance&rdquo;, yet it doubles some real-world odds.
-        And it beats almost every other predictor psychology has.
+        <strong>If you&apos;re predicting one person</strong>, r = .3 is nearly worthless. …{' '}
+        <strong>If you&apos;re sorting a population</strong>, the same number is powerful. … This is
+        why r = .2 is simultaneously useless for hiring <em>this</em> candidate and valuable for a
+        firm making 10,000 hires.
       </>
     ),
   },
   {
     id: 'replication',
     depth: 2,
-    state: 'open',
+    state: 'ready',
     query: 'Why do effect sizes shrink on replication?',
-    answer: null,
+    answer: (
+      <>
+        The dominant mechanism is a selection filter. Suppose the true correlation is ρ = .20 and
+        the original study had N = 50: SE ≈ .14, so significance requires an observed r ≥ .27.
+        Conditional on clearing that bar, the <em>expected</em> published r is about{' '}
+        <strong>.36</strong> — 80% inflation, with no dishonesty anywhere in the chain.
+      </>
+    ),
   },
   {
     id: 'stability',
     depth: 1,
-    state: 'open',
+    state: 'ready',
     query: 'Do traits change over a lifetime?',
-    answer: null,
+    answer: (
+      <>
+        <strong>Rank order rises but never locks.</strong> …{' '}
+        <strong>Mean levels move in one direction.</strong> …{' '}
+        <strong>Deliberate change is faster than development.</strong> Roberts&apos; meta-analysis
+        of 207 intervention studies found trait change of about d = .37 over an average of 24 weeks,
+        concentrated in neuroticism and (low) extraversion.
+      </>
+    ),
   },
   {
     id: 'mbti',
@@ -1008,8 +1061,10 @@ const FRONTIER_NODES: FrontierNode[] = [
     query: 'Is Myers-Briggs any better?',
     answer: (
       <>
-        No. Its types don&apos;t replicate — half of retakers get a different letter within weeks —
-        while continuous traits stay stable. Settled, not worth more time.
+        MBTI&apos;s four axes are four of the Big Five, dichotomized. … So the parts of MBTI that
+        work are Big Five variance wearing Jungian labels; the parts that are distinctively Jungian
+        — type dynamics, dominant/auxiliary function stacks — are the parts with essentially no
+        empirical support.
       </>
     ),
   },
@@ -1077,31 +1132,12 @@ const FrontierDemo: FC = () => {
               {active.query}
             </div>
           </div>
-          {active.answer ? (
-            <>
-              <p className="text-[14px] leading-relaxed text-stone-700">{active.answer}</p>
-              {readIds.has(active.id) && (
-                <p className="kickstart-row-enter mt-3 flex items-center gap-1.5 font-sans text-[12px] text-stone-400">
-                  <StateGlyph state="read" />
-                  Marked as read — Talleyrand knows too.
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="rounded-lg border border-dashed border-stone-300 bg-stone-100/60 p-4 text-center">
-              <div className="mb-2 text-[13px] text-stone-400">
-                Still open — no answer written yet.
-              </div>
-              <Link
-                to={DEMO_CASE_ROUTES.bigFive}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-tooltip="Copy the real case to ask it yourself"
-                className="inline-block rounded-md bg-stone-900 px-3 py-1.5 text-[12px] font-medium text-stone-50 transition-colors hover:bg-stone-700"
-              >
-                Ask it yourself →
-              </Link>
-            </div>
+          <p className="text-[14px] leading-relaxed text-stone-700">{active.answer}</p>
+          {readIds.has(active.id) && (
+            <p className="kickstart-row-enter mt-3 flex items-center gap-1.5 font-sans text-[12px] text-stone-400">
+              <StateGlyph state="read" />
+              Marked as read — Talleyrand knows too.
+            </p>
           )}
         </div>
       </div>
@@ -1118,22 +1154,22 @@ interface Suggestion {
   acceptNote: string;
 }
 
+// The suggestions pending under the free-will case's root answer.
 const SUGGESTIONS: Suggestion[] = [
   {
     id: 's1',
-    text: 'What do compatibilists actually mean by a “free” choice?',
-    acceptNote: 'Definitions matter here — more conceptual ground.',
+    text: 'What experiment could distinguish a genuinely settled decision from mere neural bias or preparation before action?',
+    acceptNote: 'Wants an experiment that could settle it — designs over commentary.',
   },
   {
     id: 's2',
-    text: 'Do the Libet experiments really show decisions happen before awareness?',
-    acceptNote: 'Experiments are the lane — bring data.',
+    text: 'How robust is the finding that readiness potentials disappear for deliberate, consequential choices, and what are its main methodological weaknesses?',
+    acceptNote: 'Robustness matters — methods and weaknesses, not headlines.',
   },
   {
     id: 's3',
-    bigPicture: true,
-    text: 'Am I asking an empirical question dressed up as a philosophical one?',
-    acceptNote: 'Open to reframing — bolder questions welcome.',
+    text: 'What does roughly 60% advance prediction actually show once temporal leakage, choice-history effects, and out-of-sample replication are accounted for?',
+    acceptNote: 'Wants the headline number taken apart — bring the statistics.',
   },
 ];
 
@@ -1239,7 +1275,7 @@ const SuggestionsDemo: FC = () => {
       addNote({
         id: 'bulb',
         kind: 'bulb',
-        text: 'The brain-scan angle matters — keep it in view.',
+        text: 'The empirical-vs-philosophical split matters — keep it in view.',
       });
     setFlagged(!flagged);
   };
@@ -1268,7 +1304,7 @@ const SuggestionsDemo: FC = () => {
 
         <div className="flex items-end gap-2">
           <p className="min-w-0 flex-1 text-[15px] leading-relaxed text-stone-700">
-            …so the argument leans on determinism itself;{' '}
+            …
             <button
               onClick={toggleFlagged}
               data-tooltip={flagged ? 'Insight flagged — click to remove' : 'Flag as an insight'}
@@ -1278,9 +1314,10 @@ const SuggestionsDemo: FC = () => {
                   : 'cursor-pointer rounded-[3px] border-b border-dashed border-yellow-600/60 text-left transition-colors hover:bg-yellow-100/70'
               }
             >
-              the brain-scan evidence adds less than it seems
-            </button>
-            .
+              Determinism is not an experimental finding.
+            </button>{' '}
+            If universal physical determination threatens free will, milliseconds add nothing; if it
+            doesn&apos;t, they still add nothing.
           </p>
           <button
             onClick={toggleLoved}

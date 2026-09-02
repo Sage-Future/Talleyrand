@@ -25,7 +25,7 @@ from uuid import UUID, uuid4
 from talleyrand.core.config import settings
 from talleyrand.core.llm import SourceChunk, WebSourceCollector, provider_error_detail
 from talleyrand.features.graph.dtos import GraphNoId, WebSourceDTO
-from talleyrand.features.graph.models import GraphDataRepository, GraphDocument
+from talleyrand.features.graph.models import DocumentLoad, GraphDataRepository, GraphDocument
 from talleyrand.features.research.big_picture import (
     MAX_SUGGESTIONS as BIG_PICTURE_CAP,
 )
@@ -59,9 +59,9 @@ from talleyrand.infra.db import get_db
 logger = logging.getLogger(__name__)
 
 # How many of a user's background answers may generate at once; the rest queue.
-# Not configurable: each running generation holds its own copy of the case and
-# ships it to the provider, so this number sets the instance's peak memory as
-# much as it sets throughput.
+# Not configurable: each generation loads its own copy of the case to build
+# and send its request, so this number sets the instance's peak memory as much
+# as it sets throughput.
 BACKGROUND_CONCURRENCY = 3
 EMPTY_ANSWER_ERROR = "The model returned an empty answer."
 STREAM_STALLED_ERROR = "The model stopped responding. Please retry."
@@ -369,6 +369,14 @@ class GenerationJobManager:
                     params=CheatSheetParams(openai_api_key=params.openai_api_key),
                 )
 
+            # The model writes cross-links as outline numbers against the tree
+            # it is shown; only this map is needed once the answer is in, so
+            # the case itself can go before the answer streams.
+            node_id_by_outline = {
+                outline: tree_node_id
+                for tree_node_id, outline in build_question_tree(graph).outline.items()
+            }
+
             stream = await do_research_query(
                 node_id=node_id,
                 graph=graph,
@@ -377,6 +385,11 @@ class GenerationJobManager:
                 web_search_enabled=params.web_search_enabled,
                 verbosity=params.verbosity,
             )
+            # The request is on its way and nothing below reads the case
+            # again. Every running answer holds its own copy — documents and
+            # PDFs included — and an answer streams for minutes, so keeping it
+            # to the end of the job is what used to set the instance's peak.
+            del graph
 
             # Bound the wait for each token, resetting on every one: a provider
             # stream that goes silent (a hung web-search/tool call that never
@@ -415,10 +428,7 @@ class GenerationJobManager:
             # The model wrote outline-number refs against the tree snapshot it
             # was shown; persist them as node ids so later tree edits can't
             # silently re-target them.
-            tree = build_question_tree(graph)
-            answer = freeze_ref_tokens(
-                answer, {outline: nid for nid, outline in tree.outline.items()}
-            )
+            answer = freeze_ref_tokens(answer, node_id_by_outline)
 
             answered_at = datetime.now(UTC)
             collected = [
@@ -496,7 +506,10 @@ class GenerationJobManager:
         repo = self._job_repo()
 
         try:
-            graph = await self.load_effective_graph(record.user_id, record.graph_id)
+            # The suggesters read the text documents and list PDFs by name.
+            graph = await self.load_effective_graph(
+                record.user_id, record.graph_id, documents="text_only"
+            )
             if graph is None:
                 await repo.delete(record.id)
                 return
@@ -589,7 +602,11 @@ class GenerationJobManager:
         repo = self._job_repo()
 
         try:
-            graph = await self.load_effective_graph(record.user_id, record.graph_id)
+            # The sheet names the documents; their content already went into
+            # the answers it condenses.
+            graph = await self.load_effective_graph(
+                record.user_id, record.graph_id, documents="names_only"
+            )
             if graph is None:
                 await repo.delete(record.id)
                 return
@@ -632,15 +649,20 @@ class GenerationJobManager:
 
     # --- shared --------------------------------------------------------------
 
-    async def load_effective_graph(self, user_id: str, graph_id: str) -> GraphNoId | None:
+    async def load_effective_graph(
+        self, user_id: str, graph_id: str, *, documents: DocumentLoad = "full"
+    ) -> GraphNoId | None:
         """
         The graph as the doc + unacked job results — what any read would see.
         Records are read BEFORE the doc: a save writes the doc first and then
         retires records, so a record retired between the two reads implies the
         doc read afterwards already contains its result.
+
+        `documents` is passed through to the load (see DocumentLoad); a job
+        that never reads document contents leaves them in the database.
         """
         records = await self._job_repo().get_for_graph(graph_id)
-        result = await self._graph_repo().get_by_id(user_id, graph_id)
+        result = await self._graph_repo().get_by_id(user_id, graph_id, documents=documents)
         if result is None:
             return None
         _, doc = result

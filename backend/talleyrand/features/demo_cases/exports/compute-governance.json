@@ -1,0 +1,669 @@
+{
+  "name": "Compute Control Effectiveness",
+  "nodes": [
+    {
+      "id": "8c020035-eb0b-4ecf-b867-897304a557b8"
+    },
+    {
+      "id": "80bbba24-04f8-4ef6-8b87-654edaed675e"
+    },
+    {
+      "id": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec"
+    },
+    {
+      "id": "f05e9614-343f-4b84-9da4-1854c70b5d74"
+    },
+    {
+      "id": "cc9a3742-bcb8-49da-ad81-5e19cea03d47"
+    }
+  ],
+  "edges": [],
+  "nodeContents": [
+    {
+      "id": "8c020035-eb0b-4ecf-b867-897304a557b8",
+      "query": "What does compute governance actually restrict today, in practice?",
+      "response": "## The legal object is a spec sheet, not \"AI\"\n\nNothing in US compute governance restricts capabilities, training runs, or model size. It restricts chips crossing borders, defined by hardware parameters: ([NVIDIA CORP - Form 10-Q - FY2026](https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000052/nvda-20260426.htm)) total processing performance, performance density, interconnect bandwidth, and memory bandwidth. Everything downstream of that — who trains what — is untouched by design.\n\n**Three layers actually operate today:**\n\n1. **Chip exports.** Since ([Export control compliance for running advanced AI chips · Compute Law Blog](https://computelaw.blog/deals/export-control-compliance-advanced-ai-chips/)) January 2026, parts under 21,000 TPP and 6,500 GB/s DRAM bandwidth (explicitly H200 and AMD MI325X) get case-by-case review for China and Macau; anything above — H100, B200 — stays presumption of denial. Approval carries ([BIS Export Policy Shift | Introl Blog](https://introl.com/blog/bis-export-policy-h200-mi325x-china-case-by-case-2026)) a 25% tariff, a volume cap, third-party testing in the US, and KYC conditions.\n2. **Manufacturing equipment.** The quieter, deeper layer — tools to Chinese fabs, now managed by annual licenses after Samsung's and SK hynix's Validated End User status lapsed. This constrains substitutes rather than imports, so it matters most for your domestic-substitutes thread.\n3. **End users.** Entity List designations, plus enforcement reaching ([Managing Export Control Risks in the AI Chip Ecosystem | Morrison Foerster](https://www.mofo.com/resources/insights/260209-managing-export-control-risks-in-the-ai-chip-ecosystem)) freight forwarders, banks, and data-center operators, not just chipmakers.\n\n**What is *not* restricted:** model weights — the AI Diffusion Rule's ECCN 4E091 still sits in the CFR unenforced, a \"zombie rule\" a future administration could revive without new rulemaking; remote cloud access from abroad, still open pending the Remote Access Security Act (House-passed 369–22); and domestic training, where no federal compute threshold binds anyone.\n\n**The bite in practice is stranger than the rules suggest.** ([U.S. clears H200 chip sales to 10 China firms as Nvidia CEO looks for breakthrough](https://www.cnbc.com/2026/05/14/us-clears-h200-chip-sales-to-10-china-firms-as-nvidia-ceo-looks-for-breakthrough.html)) Roughly ten Chinese firms — Alibaba, Tencent, ByteDance, JD.com — were cleared to buy up to 75,000 H200s each, yet ([NVIDIA CORP - Form 10-K - FY2026](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm)) Nvidia has booked no revenue under the program and doesn't know whether China will permit imports at all, because Beijing guided firms to pull back. The operative restriction on H200s in China today is partly Chinese policy.\n\nThat fork matters for the case: \"compute governance\" evaluated as chip export policy is a volatile, deal-by-deal instrument, while evaluated as tooling policy it's a slow, structural one. Their answers to your relocation question differ — worth deciding which you're actually testing before [[80bbba24-04f8-4ef6-8b87-654edaed675e]].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T15:19:22.167497Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://www.mofo.com/resources/insights/260209-managing-export-control-risks-in-the-ai-chip-ecosystem",
+          "title": "Managing Export Control Risks in the AI Chip Ecosystem | Morrison Foerster",
+          "pageAge": "February 9, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://computelaw.blog/deals/export-control-compliance-advanced-ai-chips/",
+          "title": "Export control compliance for running advanced AI chips · Compute Law Blog",
+          "pageAge": "May 23, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000052/nvda-20260426.htm",
+          "title": "NVIDIA CORP - Form 10-Q - FY2026",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+          "title": "NVIDIA CORP - Form 10-K - FY2026",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://introl.com/blog/bis-export-policy-h200-mi325x-china-case-by-case-2026",
+          "title": "BIS Export Policy Shift | Introl Blog",
+          "pageAge": "February 7, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://www.cnbc.com/2026/05/14/us-clears-h200-chip-sales-to-10-china-firms-as-nvidia-ceo-looks-for-breakthrough.html",
+          "title": "U.S. clears H200 chip sales to 10 China firms as Nvidia CEO looks for breakthrough",
+          "pageAge": "May 14, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/United_States_export_controls_on_AI_chips_and_semiconductors",
+          "title": "United States export controls on AI chips and semiconductors",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.morganlewis.com/pubs/2026/01/bis-revises-export-review-policy-for-advanced-ai-chips-destined-for-china-and-macau",
+          "title": "BIS Revises Export Review Policy for Advanced AI Chips Destined for China and Macau",
+          "pageAge": "January 16, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.cfr.org/articles/new-ai-chip-export-policy-china-strategically-incoherent-and-unenforceable",
+          "title": "The New AI Chip Export Policy to China: Strategically Incoherent and Unenforceable | Council on Foreign Relations",
+          "pageAge": "January 14, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.layer3labs.io/guides/ai-export-controls-business-guide",
+          "title": "AI Export Controls: What Businesses Need to Know (2026)",
+          "pageAge": "July 27, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://ecorpit.com/ai-regulation-export-controls-enterprise-models-2026/",
+          "title": "2026 AI export controls: chip rules and model choice",
+          "pageAge": "June 26, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000038/a2026-annualxreportxwebxfi.pdf",
+          "title": "NVIDIA CORP - Form ARS - FY2026",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.bloomberg.com/news/articles/2026-02-26/nvidia-gets-us-license-for-small-amount-of-h200-exports-to-china",
+          "title": "Nvidia Gets US License for Small Amount of H200 Exports to China - Bloomberg",
+          "pageAge": "February 26, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.spheron.network/blog/nvidia-h200-china-shipment-2026/",
+          "title": "NVIDIA H200 China Shipment 2026: What It Means for GPU Pricing | Spheron Blog",
+          "pageAge": "2 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://www.bis.gov/press-release/department-commerce-revises-license-review-policy-semiconductors-exported-china",
+          "title": "License Review Policy for Semiconductors Exported to China",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.afslaw.com/perspectives/national-security-counsel/bis-relaxes-export-license-review-h200-chips-china-and-macau",
+          "title": "BIS Relaxes Export License Review for H200 Chips to China and Macau – But Adds Compliance Burdens and Certification Risk | ArentFox Schiff",
+          "pageAge": "February 9, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://semiconductorsinsight.com/us-china-chip-export-controls-h200-2026/",
+          "title": "US China Chip Export Controls H200 2026: The Policy Shift Explained",
+          "pageAge": "April 29, 2026",
+          "cited": false
+        }
+      ],
+      "sourcesFound": 17
+    },
+    {
+      "id": "80bbba24-04f8-4ef6-8b87-654edaed675e",
+      "query": "How much have export controls slowed frontier training runs so far?",
+      "response": "## Short answer: a real tax on scale, a small delay in capability\n\nThe cleanest way to read the evidence is that controls bit hard on *compute* and much more weakly on *published capability*.\n\n**What clearly slowed.** The ceiling on China's largest runs. ([AI Chip Export Controls 2026: How Huawei Grabbed 50%+ of China's Market | Value Add VC](https://valueaddvc.com/blog/how-export-controls-on-ai-chips-are-reshaping-global-tech-competition)) A cluster of Ascend 910C chips trains a frontier model more slowly and expensively than an equivalent Nvidia GB200 cluster — nobody in the debate disputes this. Chinese labs have been assembling runs on stockpiled A100/H800-class silicon plus domestic parts, with clusters roughly an order of magnitude smaller than the ~100k-accelerator US builds, and have had to adapt training and inference stacks to a mix of pre-2023 Nvidia hardware and Ascend chips that trail Blackwell on interconnect bandwidth and per-chip memory. The under-discussed cost is not the single big run but *iteration rate*: fewer parallel experiments, fewer failed runs you can afford, slower ablation cycles.\n\n**What didn't slow.** The benchmark gap between the best US and best Chinese models has stayed in the months, not years, range — while the compute gap widened. Constraint arguably *accelerated* algorithmic efficiency: compute-constrained labs have a much stronger incentive to squeeze more model quality out of fewer, weaker chips, which is part of why DeepSeek's efficiency work mattered. By 2026 the domestic training stack is no longer a demo — ([Export controls impact Chinese AI compute — AI 2027 Tracker](https://ai2027-tracker.com/predictions/export-controls/)) GLM-5 (744B) was trained entirely on Ascend, and DeepSeek V4 is Ascend-optimized.\n\n**Where the binding constraint moved.** Not Nvidia access but memory: ([Huawei / HiSilicon Spotlight — Ascend AI Chips, SMIC, China Bifurcation & Export Controls | SemiconductorX](https://semiconductorx.com/spotlight-huawei-hisilicon.html)) CXMT is projected to make ~2M HBM stacks in 2026, enough for only ~250–300k Ascend 910C-equivalent packages, while SMIC can produce die for over a million. That's the number to track — the throttle is now HBM and packaging, which [[1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec]] takes up on the substitution side.\n\n**Caveat on attribution.** \"Slowed by how much\" has no observable counterfactual; what would settle it is the subject of [[cc9a3742-bcb8-49da-ad81-5e19cea03d47]].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T15:19:50.134667Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://ai2027-tracker.com/predictions/export-controls/",
+          "title": "Export controls impact Chinese AI compute — AI 2027 Tracker",
+          "pageAge": "June 8, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://valueaddvc.com/blog/how-export-controls-on-ai-chips-are-reshaping-global-tech-competition",
+          "title": "AI Chip Export Controls 2026: How Huawei Grabbed 50%+ of China's Market | Value Add VC",
+          "pageAge": "July 15, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://semiconductorx.com/spotlight-huawei-hisilicon.html",
+          "title": "Huawei / HiSilicon Spotlight — Ascend AI Chips, SMIC, China Bifurcation & Export Controls | SemiconductorX",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://ai-frontiers.org/articles/us-chip-export-controls-china-ai",
+          "title": "How US Export Controls Have (and Haven't) Curbed Chinese AI | AI Frontiers",
+          "pageAge": "July 8, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://www.layer3labs.io/guides/ai-export-controls-business-guide",
+          "title": "AI Export Controls: What Businesses Need to Know (2026)",
+          "pageAge": "July 27, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://hellochinatech.com/p/china-ai-chip-training-stack",
+          "title": "Can China Train AI Without Nvidia? The 2026 Evidence",
+          "pageAge": "July 2, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://invictusrisksolutions.co.uk/china-considers-export-controls-on-advanced-ai-models-training-data-and-semiconductor-designs/",
+          "title": "China Considers Export Controls on Advanced AI Models, Training Data and Semiconductor Designs – Invictus Risk Solutions LLP",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.the-substrate.net/p/where-chinas-ai-chip-supply-chain",
+          "title": "Where China’s AI chip supply chain stands in 2026",
+          "pageAge": "June 4, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://lapaasvoice.com/china-plans-tighter-export-controls-on-ai-models-and-chips/",
+          "title": "China AI Export Controls: Curbs on Models and Chips",
+          "pageAge": "July 21, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.tomshardware.com/tech-industry/semiconductors/huaweis-ascend-ai-chip-ecosystem-scales",
+          "title": "Huawei's Ascend AI chip ecosystem scales up as China pushes for semiconductor independence — however, firm lags behind on efficiency and performance | Tom's Hardware",
+          "pageAge": "November 21, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://rcrwireless.com/20250930/ai-infrastructure/huawei-ai-chips-2",
+          "title": "Huawei to double output of Ascend AI chips",
+          "pageAge": "March 25, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://techblog.comsoc.org/2025/10/02/huawei-to-double-output-of-ascend-ai-chips-in-2026-openai-orders-hbm-chips-from-sk-hynix-samsung-for-stargate-uae-project/",
+          "title": "Huawei to Double Output of Ascend AI chips in 2026; OpenAI orders HBM chips from SK Hynix & Samsung for Stargate UAE project – IEEE ComSoc Technology Blog",
+          "pageAge": "October 2, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://newsletter.semianalysis.com/p/huawei-ascend-production-ramp",
+          "title": "Huawei Ascend Production Ramp: Die Banks, TSMC Continued Production, HBM is The Bottleneck",
+          "pageAge": "February 4, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://invezz.com/news/2025/09/29/huawei-to-double-ai-chip-output-in-2026-targeting-1-6-million-dies/",
+          "title": "Huawei to double AI chip output in 2026, targeting 1.6 million dies",
+          "pageAge": "September 29, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://tech-insider.org/huawei-ascend-950pr-ai-chip-nvidia-china-2026/",
+          "title": "Huawei Ascend 950PR: The 1.56 PFLOP AI Chip vs Nvidia [2026]",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://absolutedigitalpublishers.com/articles/huawei-ascend-a-roadmap-that-regresses-on-paper",
+          "title": "Huawei's Next Ascend Chips Have Lower Peak Specs Than the One They Replace — Absolute Digital Publishers",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://mlq.ai/news/huawei-plans-massive-production-boost-600000-ascend-910c-ai-chips-to-challenge-nvidia/",
+          "title": "600000 Ascend 910C AI Chips to Challenge Nvidia",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://gulfnews.com/technology/huawei-to-double-output-of-top-ai-chip-as-nvidia-wavers-in-china-1.500287469",
+          "title": "Huawei to double output of AI chip as Nvidia wavers in China",
+          "pageAge": null,
+          "cited": false
+        }
+      ],
+      "sourcesFound": 18
+    },
+    {
+      "id": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec",
+      "query": "How easily can controlled chips be smuggled or substituted?",
+      "response": "## Smuggling: easy at the margin, hard at scale\n\nThe known cases are large but lumpy. A March 2026 DOJ indictment charged three people, including a Super Micro cofounder, with shipping AI servers containing Nvidia chips worth \\$2.5 billion to Chinese customers between 2024 and 2025; a separate case involved 750 servers worth about \\$170 million ordered with false end-use certifications. There are now at least seven such prosecutions, including Taiwan's first. The enforcement asymmetry is the striking number: one case alone involved \\$2.5 billion, while federal spending on policing export controls was \\$122 million in all of 2025.\n\nBut smuggled hardware is not equivalent hardware. It arrives without vendor support, firmware updates, or spare-part pipelines, and diverted lots are sized in thousands of servers — against an estimated 4.5 million GPUs Nvidia sold in 2025. That supports inference and mid-size fine-tuning far better than a coherent, months-long frontier training run. Note also that policy shifts swamp enforcement: the apparent relaxation of controls on H200 exports to China moves more silicon than any smuggling ring.\n\n## Substitution: logic is nearly solved, memory is not\n\nDomestic logic is no longer the binding constraint. SMIC's ~50,000 wafers/month of 7nm-class capacity suffices for die for over a million Ascend units per year. Memory is the choke point: China stockpiled roughly 13 million HBM stacks, largely from Samsung, while CXMT is projected to make ~2 million stacks in 2026 — enough for only 250,000–300,000 Ascend-equivalent packages. Huawei's answer is vertical integration: the Ascend 950DT, due Q4 2026, uses its own HiZQ 2.0 HBM at 144 GB and 4 TB/s — H200-class memory.\n\n**The decision point:** controls no longer bite through chip design or fabs, they bite through HBM stacks and advanced packaging. Whether that's a durable brake or a two-year delay is the crux of [[cc9a3742-bcb8-49da-ad81-5e19cea03d47]].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T15:19:17.831720Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://www.helpnetsecurity.com/2026/03/26/ai-chips-smuggling-scheme-china/",
+          "title": "Mission to smuggle $170 million worth of AI tech to China collapsed for three men - Help Net Security",
+          "pageAge": "March 26, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.alvarezandmarsal.com/thought-leadership/ai-technology-export-enforcement-5-signals-companies-cannot-afford-to-miss",
+          "title": "AI Technology Export Enforcement: 5 Signals Companies Cannot Afford to Miss | Alvarez & Marsal | Management Consulting | Professional Services",
+          "pageAge": "April 7, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.taipeitimes.com/News/taiwan/archives/2026/05/22/2003857777",
+          "title": "Prosecutors seek to detain trio over AI chip smuggling - Taipei Times",
+          "pageAge": "May 21, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.fdd.org/analysis/2026/04/15/were-only-seeing-the-tip-of-the-chip-smuggling-iceberg/",
+          "title": "We’re only seeing the tip of the chip-smuggling iceberg",
+          "pageAge": "April 15, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.fdd.org/analysis/2026/03/20/exposure-of-major-chinese-linked-chip-smuggling-operations-shows-limits-of-industry-self-policing/",
+          "title": "Exposure of Major Chinese-Linked Chip Smuggling Operations Shows Limits of Industry Self-Policing",
+          "pageAge": "March 20, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://bisi.org.uk/reports/ai-chip-smuggling-the-limits-of-us-export-controls",
+          "title": "AI Chip Smuggling: The Limits of US Export Controls — Bloomsbury Intelligence and Security Institute (BISI)",
+          "pageAge": "April 6, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://tech-insider.org/super-micro-nvidia-chip-smuggling-china-2026/",
+          "title": "Super Micro $2.5B Chip Smuggling Case [Updated April 2026]",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://chinaselectcommittee.house.gov/media/press-releases/moolenaar-the-trump-administration-acts-to-combat-china-s-chip-smuggling",
+          "title": "moolenaar the trump administration acts to combat china s chip smuggling",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://newsletter.semianalysis.com/p/huawei-ascend-production-ramp",
+          "title": "Huawei Ascend Production Ramp: Die Banks, TSMC Continued Production, HBM is The Bottleneck",
+          "pageAge": "February 4, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://techblog.comsoc.org/2025/10/02/huawei-to-double-output-of-ascend-ai-chips-in-2026-openai-orders-hbm-chips-from-sk-hynix-samsung-for-stargate-uae-project/",
+          "title": "Huawei to Double Output of Ascend AI chips in 2026; OpenAI orders HBM chips from SK Hynix & Samsung for Stargate UAE project – IEEE ComSoc Technology Blog",
+          "pageAge": "October 2, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://x.com/hsu_steve/status/1968629241106366878",
+          "title": "steve hsu on X: \"Huawei announced its AI chip roadmap through 2028. 2026 Ascend 950 will use HW-developed HBM (High Bandwidth Memory). 1. Suggests SMIC capacity at 5-7nm is no longer a problem 2. At the node or cluster level HW may be competitive with Nvidia even if they continue to lag at the\" / X",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://dev.to/lanternproton/deepseek-v4-on-huaweis-ascend-950-a-real-stress-test-for-chinas-ai-chip-ecosystem-ook",
+          "title": "DeepSeek V4 on Huawei's Ascend 950: A Real Stress Test for China's AI Chip Ecosystem - DEV Community",
+          "pageAge": "May 20, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://rcrwireless.com/20250930/ai-infrastructure/huawei-ai-chips-2",
+          "title": "Huawei to double output of Ascend AI chips",
+          "pageAge": "March 25, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://tech-insider.org/huawei-ascend-950pr-ai-chip-nvidia-china-2026/",
+          "title": "Huawei Ascend 950PR: The 1.56 PFLOP AI Chip vs Nvidia [2026]",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://semiconductorx.com/spotlight-huawei-hisilicon.html",
+          "title": "Huawei / HiSilicon Spotlight — Ascend AI Chips, SMIC, China Bifurcation & Export Controls | SemiconductorX",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.the-substrate.net/p/where-chinas-ai-chip-supply-chain",
+          "title": "Where China’s AI chip supply chain stands in 2026",
+          "pageAge": "June 4, 2026",
+          "cited": false
+        }
+      ],
+      "sourcesFound": 16
+    },
+    {
+      "id": "f05e9614-343f-4b84-9da4-1854c70b5d74",
+      "query": "What is the track record of past technology controls, like nuclear or crypto?",
+      "response": "Historical controls have a consistent shape: **they delay and tax, they almost never deny — and their durability tracks how physical and how concentrated the chokepoint is.**\n\n| Case | What was actually controlled | Outcome |\n|---|---|---|\n| Nuclear (Zangger/NSG, post-1974) | Enrichment hardware, maraging steel, flow-forming machines, vacuum pumps | Delay, not denial. Pakistan took ~20 years from decision to test; A.Q. Khan's network routed around lists via shell buyers. But only 9 states have weapons, against the 15–25 Kennedy expected by the 1970s |\n| Crypto Wars (1990s) | Strong cryptography as a \"munition\" | Near-total failure within a decade. Bits leak: PGP was exported as a printed book. Residue: export-grade ciphers left FREAK/Logjam holes in TLS into the 2010s |\n| COCOM (Soviet bloc) | Machine tools, microelectronics | Held a ~5–10 year lag for decades, but leaked badly — Toshiba-Kongsberg propeller mills, the KGB's Line X program |\n| MTCR | Missile airframes, engines, guidance | Raised cost and time; North Korea and Iran arrived anyway |\n| EUV lithography | One supplier, one servicing organization | The strongest control ever attempted — and the closest analogue to AI compute |\n\nThe predictors of a control that holds: few producers, extreme capital intensity, deep tacit knowledge, and an **ongoing servicing/consumables tail** so the buyer never really owns the capability. The predictors of failure: the good is information, or the restricted party is large enough that denial funds a national champion. Every one of these regimes triggered import substitution — Soviet Ryad mainframes cloned IBM with a lag; the 2019+ controls midwifed Huawei's ecosystem.\n\nThe uncomfortable structural point for this case: compute controls are a *nuclear-style* control on the input to a *crypto-style* output. Chips are atoms; weights and algorithms are bits. That asymmetry is what makes \"delay in years\" the only honest success metric — which is exactly what [[cc9a3742-bcb8-49da-ad81-5e19cea03d47]] has to operationalise, and why the substitution rate in [[1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec]] dominates the verdict.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T15:19:21.815616Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    },
+    {
+      "id": "cc9a3742-bcb8-49da-ad81-5e19cea03d47",
+      "query": "What evidence would show the controls work — or just relocate the work?",
+      "response": "Both hypotheses predict the same headline — China has fewer top-end chips than the US. Discriminating between them requires **rates and prices**, not levels, because \"relocated\" work still shows up as a compute deficit at the restricted actor.\n\n## Indicators that actually separate the hypotheses\n\n| Observable | Controls bite | Work relocates |\n|---|---|---|\n| **Grey-market price premium** for controlled GPUs inside China | stays large and rises with enforcement | drifts toward list price (the detail for [[1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec]]) |\n| **The binding input** | a physical ceiling holds: ([Huawei / HiSilicon Spotlight — Ascend AI Chips, SMIC, China Bifurcation & Export Controls | SemiconductorX](https://semiconductorx.com/spotlight-huawei-hisilicon.html)) CXMT is projected at ~2M HBM stacks in 2026, enough for roughly 250,000–300,000 Ascend chips — memory, not logic, is the cap | ceiling lifts via domestic HBM ramp or third-country supply |\n| **Largest verified domestic training run**, in FLOP | gap to the US frontier widens in doubling-times | gap holds constant — same capability, different flag |\n| **Where Chinese frontier runs physically happen** | on-shore and chip-starved | offshore rentals and subsidiaries in Gulf/SE Asia clouds |\n| **Composition of capability gains** | pretraining scale stalls | gains shift to distillation, post-training and inference-time compute — the compute-light escape route |\n\n## Three things that will corrupt a naive reading\n\n1. **The treatment keeps changing.** ([AI Chip Export Controls in 2026: What Changed and What It Means | ECCN Finder](https://eccnfinder.com/guides/ai-chip-export-controls-2026/)) A blanket presumption of denial governed advanced-computing exports to China through late 2025; a final rule effective January 15, 2026 replaced it ([BIS Revises Export Review Policy for Advanced AI Chips Destined for China and Macau](https://www.morganlewis.com/pubs/2026/01/bis-revises-export-review-policy-for-advanced-ai-chips-destined-for-china-and-macau)) with case-by-case review under supply, security and testing conditions. Pre/post comparisons don't hold policy fixed — the analysis in [[80bbba24-04f8-4ef6-8b87-654edaed675e]] has no clean control period.\n2. **Benchmark parity is the wrong outcome variable.** Distillation from US models keeps Chinese scores tracking US scores nearly independent of compute. Measure effective compute and time-to-replicate, not MMLU-style leaderboards.\n3. **Evasion is only visible when it fails.** Huawei obtained ~2.9 million TSMC 7nm dies via Sophgo before US authorities called it evasion, and TSMC was fined \\$1 billion. Enforcement statistics measure detection, not leakage — which is why the price premium is the more robust estimator.\n\n**Decision point:** pick one headline metric now and pre-register thresholds, before the next news cycle supplies the narrative. My candidate: the compute-gap in doubling-times plus the smuggling premium, read jointly — the historical base rate for \"how many years do controls buy\" belongs to [[f05e9614-343f-4b84-9da4-1854c70b5d74]].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T15:20:20.025458Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://semiconductorx.com/spotlight-huawei-hisilicon.html",
+          "title": "Huawei / HiSilicon Spotlight — Ascend AI Chips, SMIC, China Bifurcation & Export Controls | SemiconductorX",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.morganlewis.com/pubs/2026/01/bis-revises-export-review-policy-for-advanced-ai-chips-destined-for-china-and-macau",
+          "title": "BIS Revises Export Review Policy for Advanced AI Chips Destined for China and Macau",
+          "pageAge": "January 16, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://eccnfinder.com/guides/ai-chip-export-controls-2026/",
+          "title": "AI Chip Export Controls in 2026: What Changed and What It Means | ECCN Finder",
+          "pageAge": "April 10, 2026",
+          "cited": true
+        },
+        {
+          "url": "https://newsletter.semianalysis.com/p/huawei-ascend-production-ramp",
+          "title": "Huawei Ascend Production Ramp: Die Banks, TSMC Continued Production, HBM is The Bottleneck",
+          "pageAge": "February 4, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://techblog.comsoc.org/2025/10/02/huawei-to-double-output-of-ascend-ai-chips-in-2026-openai-orders-hbm-chips-from-sk-hynix-samsung-for-stargate-uae-project/",
+          "title": "Huawei to Double Output of Ascend AI chips in 2026; OpenAI orders HBM chips from SK Hynix & Samsung for Stargate UAE project – IEEE ComSoc Technology Blog",
+          "pageAge": "October 2, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://dev.to/lanternproton/deepseek-v4-on-huaweis-ascend-950-a-real-stress-test-for-chinas-ai-chip-ecosystem-ook",
+          "title": "DeepSeek V4 on Huawei's Ascend 950: A Real Stress Test for China's AI Chip Ecosystem - DEV Community",
+          "pageAge": "May 20, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.huaweicentral.com/smic-expected-to-produce-30-huawei-ascend-910b-ai-chips-by-end-of-2025/",
+          "title": "SMIC expected to produce 30% Huawei Ascend 910B AI chips by end of 2025 - Huawei Central",
+          "pageAge": "September 8, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://enkiai.com/ai-market-intelligence/smic-ai-chip-strategy-2026-inside-chinas-5nm-power-play/",
+          "title": "SMIC AI Chip Strategy 2026: Inside China's 5nm Power Play",
+          "pageAge": "April 28, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://rcrwireless.com/20250930/ai-infrastructure/huawei-ai-chips-2",
+          "title": "Huawei to double output of Ascend AI chips",
+          "pageAge": "March 25, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://tech-insider.org/huawei-ascend-950pr-ai-chip-nvidia-china-2026/",
+          "title": "Huawei Ascend 950PR: The 1.56 PFLOP AI Chip vs Nvidia [2026]",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://absolutedigitalpublishers.com/articles/huawei-ascend-a-roadmap-that-regresses-on-paper",
+          "title": "Huawei's Next Ascend Chips Have Lower Peak Specs Than the One They Replace — Absolute Digital Publishers",
+          "pageAge": "3 weeks ago",
+          "cited": false
+        },
+        {
+          "url": "https://mlq.ai/news/huawei-plans-massive-production-boost-600000-ascend-910c-ai-chips-to-challenge-nvidia/",
+          "title": "600000 Ascend 910C AI Chips to Challenge Nvidia",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.morganlewis.com/pubs/2026/07/bis-upgrades-uae-export-control-status-with-ai-chip-access-limited-to-approved-entities",
+          "title": "BIS Upgrades UAE Export Control Status, with AI Chip Access Limited to Approved Entities",
+          "pageAge": "July 21, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://ecorpit.com/ai-regulation-export-controls-enterprise-models-2026/",
+          "title": "2026 AI export controls: chip rules and model choice",
+          "pageAge": "June 26, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.layer3labs.io/guides/ai-export-controls-business-guide",
+          "title": "AI Export Controls: What Businesses Need to Know (2026)",
+          "pageAge": "July 27, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://semiconductorsinsight.com/us-china-chip-export-controls-h200-2026/",
+          "title": "US China Chip Export Controls H200 2026: The Policy Shift Explained",
+          "pageAge": "April 29, 2026",
+          "cited": false
+        }
+      ],
+      "sourcesFound": 16
+    }
+  ],
+  "brief": "Work out whether compute governance slows the development of dangerous AI capabilities or mostly relocates it. Main threads: what the controls restrict in practice, evasion and smuggling, domestic substitutes, and what success would even look like.",
+  "caseDocuments": [],
+  "suggestions": [
+    {
+      "id": "97523532-df68-49f6-82c2-32020f95fe51",
+      "parentNodeId": "8c020035-eb0b-4ecf-b867-897304a557b8",
+      "text": "How binding are annual licenses for semiconductor-manufacturing equipment, and which bottleneck tools most constrain China’s domestic substitutes?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:19:27.609452Z"
+    },
+    {
+      "id": "e2148090-6f2f-4a1e-aeac-c0035d1907f1",
+      "parentNodeId": "8c020035-eb0b-4ecf-b867-897304a557b8",
+      "text": "To what extent can Chinese labs bypass chip-export controls through remote access to foreign cloud clusters, and what limits that route?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:19:27.609452Z"
+    },
+    {
+      "id": "cdaefd9e-7e79-46b0-9561-5564be97217c",
+      "parentNodeId": "8c020035-eb0b-4ecf-b867-897304a557b8",
+      "text": "How can we disentangle the effects of US export controls from Beijing’s own restrictions on importing advanced chips?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:19:27.609452Z"
+    },
+    {
+      "id": "1e2568a4-7092-4e7b-9a5c-0dbb02b4a521",
+      "parentNodeId": "80bbba24-04f8-4ef6-8b87-654edaed675e",
+      "text": "How much does reduced experimental iteration—not just smaller final training runs—delay Chinese labs’ progress toward dangerous capabilities?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:14.181162Z"
+    },
+    {
+      "id": "a9451d18-d94d-4ad7-9fa3-c22ae7fb5efb",
+      "parentNodeId": "80bbba24-04f8-4ef6-8b87-654edaed675e",
+      "text": "How much of the apparent months-wide capability gap reflects independent frontier training rather than distillation, synthetic data, or access to foreign model outputs?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:14.181162Z"
+    },
+    {
+      "id": "8b0851a0-6773-4404-9fb8-f3d52ccc2516",
+      "parentNodeId": "80bbba24-04f8-4ef6-8b87-654edaed675e",
+      "text": "Under plausible scaling trends, when would HBM and advanced-packaging shortages become binding enough to turn today’s compute tax into a multi-year capability delay?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:14.181162Z"
+    },
+    {
+      "id": "4940e47a-d7e5-4a3e-9058-1733617242e5",
+      "parentNodeId": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec",
+      "text": "What technical and logistical constraints prevent thousands of smuggled GPUs from being assembled into a reliable frontier-training cluster?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:22.042575Z"
+    },
+    {
+      "id": "70cdcc16-bc05-4b57-966a-6d65fda96ba5",
+      "parentNodeId": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec",
+      "text": "How much frontier-scale compute could China sustain from existing Nvidia hardware and its reported HBM stockpile before replacement and failure rates materially reduce capacity?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:22.042575Z"
+    },
+    {
+      "id": "2a5b0323-046c-4539-8059-402d93de78cd",
+      "parentNodeId": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec",
+      "text": "Which enforcement interventions—customer verification, shipment tracking, financial sanctions, or post-sale telemetry—would most increase the cost of large-scale diversion without merely rerouting it?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:22.042575Z"
+    },
+    {
+      "id": "f80df88b-e0b4-4bc0-a893-5f436bdf5bd6",
+      "parentNodeId": "f05e9614-343f-4b84-9da4-1854c70b5d74",
+      "text": "Where does the EUV-control analogy to AI compute break down, especially once HBM, packaging, and mature-node chiplets can substitute for leading-edge logic?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:29.838529Z"
+    },
+    {
+      "id": "87eace94-10d5-4c3a-956a-37a7b3d20ea7",
+      "parentNodeId": "f05e9614-343f-4b84-9da4-1854c70b5d74",
+      "text": "In past control regimes, when did a temporary delay produce lasting strategic value rather than merely postpone proliferation?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:29.838529Z"
+    },
+    {
+      "id": "37c35d1f-b862-4948-82bf-0565c31f4d2a",
+      "parentNodeId": "f05e9614-343f-4b84-9da4-1854c70b5d74",
+      "text": "How strongly has coalition cohesion determined the durability of technology controls, and what does that imply if key semiconductor-producing states defect or relax enforcement?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:29.838529Z"
+    },
+    {
+      "id": "86a0a66b-4537-4dbf-be35-2ad09ec5c9c8",
+      "parentNodeId": "cc9a3742-bcb8-49da-ad81-5e19cea03d47",
+      "text": "What concrete thresholds for compute-gap doubling-times and grey-market premiums should I pre-register as evidence of a one-, two-, or five-year delay?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:40.111591Z"
+    },
+    {
+      "id": "702aa17f-303e-4bb7-a3c8-78f271d922fb",
+      "parentNodeId": "cc9a3742-bcb8-49da-ad81-5e19cea03d47",
+      "text": "How could I estimate China’s grey-market GPU price premium reliably despite hidden transactions, hardware-quality differences, and changing enforcement risk?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:40.111591Z"
+    },
+    {
+      "id": "911a523f-cecf-46a2-beea-c6acc081782a",
+      "parentNodeId": "cc9a3742-bcb8-49da-ad81-5e19cea03d47",
+      "text": "How should I translate effective-compute and time-to-replicate measurements into delay estimates for genuinely dangerous capabilities rather than benchmark performance?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T15:20:40.111591Z"
+    },
+    {
+      "id": "30d83aa1-56e9-4b45-aa77-4917b801f2bc",
+      "parentNodeId": "cc9a3742-bcb8-49da-ad81-5e19cea03d47",
+      "text": "What evidence would distinguish a genuine reduction in global dangerous-capability progress from controls that merely widen the US–China gap while the global frontier advances just as fast?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T15:20:51.052603Z"
+    },
+    {
+      "id": "c0a7fcf0-9906-4894-940d-dfd9fc4330dc",
+      "parentNodeId": "1f2a1bf5-2b16-40e7-83ce-3ea0e0eaf9ec",
+      "text": "Can the control regime identify and restrict each new bottleneck faster than industry can redesign around the previous one, or does the shift from logic to HBM to packaging imply permanent whack-a-mole?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T15:20:51.052603Z"
+    },
+    {
+      "id": "b17193f0-0eee-40f4-8744-263ebcbe014c",
+      "parentNodeId": "8c020035-eb0b-4ecf-b867-897304a557b8",
+      "text": "If policymakers are really optimizing for US semiconductor dominance and military advantage rather than AI-risk reduction, how should that change the predicted design and durability of compute controls?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T15:20:51.052603Z"
+    },
+    {
+      "id": "6079ad74-f2f6-4ea1-9218-57f092ff6d45",
+      "parentNodeId": "80bbba24-04f8-4ef6-8b87-654edaed675e",
+      "text": "Who ultimately bears the compute tax, and could the resulting subsidies, stockpiling, and domestic investment increase total global AI compute enough to offset the delay imposed on China?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T15:20:51.052603Z"
+    },
+    {
+      "id": "c99ad77b-a5b1-47db-ac78-3a2f3bcf12e3",
+      "parentNodeId": "f05e9614-343f-4b84-9da4-1854c70b5d74",
+      "text": "What irreducible lower bound on compute for dangerous capabilities must exist for hardware controls to remain effective once algorithms, distillation, and inference-time compute adapt around them?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T15:20:51.052603Z"
+    }
+  ],
+  "declinedQuestions": []
+}

@@ -1,0 +1,173 @@
+{
+  "name": "Moral Progress and Abolition",
+  "nodes": [
+    {
+      "id": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b"
+    },
+    {
+      "id": "4bdc7f32-196f-48c3-bed1-1fd2d2e28f8f"
+    },
+    {
+      "id": "5351cf70-fdb0-4d78-a919-34dc2a717e49"
+    },
+    {
+      "id": "7f197749-0be4-4ebf-b78e-59d6571e1b63"
+    }
+  ],
+  "edges": [
+    {
+      "id": "c484f92b-7072-4244-978a-6cdeee78afb4",
+      "source": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "target": "4bdc7f32-196f-48c3-bed1-1fd2d2e28f8f"
+    },
+    {
+      "id": "5e8c043b-efc7-48e7-a265-ed670130474d",
+      "source": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "target": "5351cf70-fdb0-4d78-a919-34dc2a717e49"
+    },
+    {
+      "id": "7a0d2fdf-41e6-45f7-a389-f3048ba241b0",
+      "source": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "target": "7f197749-0be4-4ebf-b78e-59d6571e1b63"
+    }
+  ],
+  "nodeContents": [
+    {
+      "id": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "query": "Is moral progress real, or just moral change?",
+      "response": "**Short answer: yes for abolition, on a standard the losers could have accepted; no for \"the moral circle expands\" as a general law.**\n\nFirst, deflate the deflation. \"Every generation thinks it's more moral\" is true of science too, and there the inference from *confident* to *deluded* obviously fails. The pattern of self-congratulation is evidence of bias, not evidence of no fact.\n\n**A loser-acceptable standard.** Don't ask whether we'd endorse the change (of course we would — we're the winners). Ask whether the change can be vindicated by resources the *losing side already held*:\n\n1. **Factual correction.** The losing position rested on empirical claims both sides accepted as testable, and those claims turned out false.\n2. **Consistency.** The losers' own principles, applied without special pleading, yield the winners' conclusion.\n3. **Survives disclosure.** The position needed enforced ignorance to hold — censorship, suppressing the testimony of the affected party — and collapsed when that was lifted.\n\nThis is immanent critique, not our verdict imposed retroactively. It's roughly what \"better\" can mean without smuggling in the winner's premises.\n\n**Abolition scores unusually well.** Natural-slavery and Curse-of-Ham arguments were empirically checkable and failed. The consistency pressure was so severe that apologists abandoned the shared framework entirely: the shift from \"necessary evil\" to Calhoun's \"positive good\" (1837) is the sound of an argument losing on the other side's terms. Slave states banned teaching literacy — criterion 3 in legal form.\n\nThe strongest cynical story — Eric Williams' claim that abolition arrived when slavery stopped paying — is the one that's been most damaged empirically. Drescher's *Econocide* has British Caribbean slavery near peak value in 1807, and Britain paid £20m in compensation in 1833, roughly 40% of annual government expenditure.\n\n**But split two claims apart.** That abolition *was* progress is defensible. That it happened *because* people reasoned better is much weaker — the arguments were fully available to Las Casas and the Quakers centuries earlier. What changed was power, coalition, and audience.\n\nThe expanding circle inherits none of abolition's credentials automatically. It has contracted repeatedly, and \"wider\" isn't a criterion — it's a description.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:35:30.613199Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    },
+    {
+      "id": "4bdc7f32-196f-48c3-bed1-1fd2d2e28f8f",
+      "query": "Did abolition happen for moral reasons or economic ones?",
+      "response": "**The dichotomy is doing the work of hiding a distinction: *motive* vs. *opportunity*.** Almost nobody in the historiography now thinks abolitionists were secretly economic actors. The live question is why their old arguments suddenly won.\n\n**Motive: sincere and expensive.** Beyond the compensation figure from [1], Kaufmann and Pape's estimate is the sharpest datum — Britain's sixty-year naval suppression campaign (1808–1867) cost roughly 1.8% of national income annually, plausibly the most costly sustained international moral action in modern history. Interest-based accounts have never explained that away.\n\n**Opportunity: political, not economic.** Three things changed, none of them \"slavery stopped paying\":\n\n- **Reputation.** Christopher Brown's *Moral Capital*: after losing America and being taunted as hypocrites, antislavery offered Britain a way to repurchase national virtue. Moral motive, contingent political traction.\n- **Franchise.** The West India interest held Parliament through rotten boroughs. The Reform Act passed in 1832; abolition in 1833. That sequence is not a coincidence.\n- **The enslaved themselves.** Haiti, Demerara (1823), and above all Jamaica's Baptist War (1831–32, ~60,000 in revolt, brutally suppressed) converted gradualism into urgency by making the status quo look ungovernable. Emancipation was partly conceded, not only granted.\n\n**Where economics genuinely enters** is the inverse of Williams: industrial Britain grew a large constituency with no stake in the plantations, and Manchester and Birmingham petitioned in numbers the planters couldn't match. Not \"slavery ceased to pay\" but \"the people it paid ceased to control the state.\"\n\n**The caution:** none of this bears on whether abolition was *progress* — a movement can be sincere and still wrong. Motive evidence is relevant to the reasoning story you flagged as weak in [1], not to the immanent-critique verdict.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:36:36.401851Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    },
+    {
+      "id": "5351cf70-fdb0-4d78-a919-34dc2a717e49",
+      "query": "Are there moral changes that later reversed?",
+      "response": "**Yes — and the big ones are close to home.**\n\n| Reversal | Expansion | Contraction |\n|---|---|---|\n| Second serfdom | Serfdom decays in Western Europe, ~1300–1500 | Re-imposed in Poland, Prussia, Russia as grain exports boom; Russia's 1649 law code removes the time limit on recovering fugitive peasants |\n| Atlantic slavery | Chattel slavery nearly gone from Western Europe by ~1100 | Rebuilt overseas at unprecedented scale; the 1780s were the peak decade of the British slave trade — *during* the Enlightenment |\n| Redemption | Black male franchise and officeholding, 1867–77 | Mississippi Plan 1890 onward. Louisiana: ~130,000 Black registered voters in 1896, ~1,300 by 1904 |\n| Jewish emancipation | Civil equality, France 1791, Germany 1871 | Nuremberg Laws, 1935 |\n| Judicial torture | Abolished across Europe roughly 1750–1800 | Gestapo, French Algeria, CIA post-2001 |\n| Witchcraft | Canon law treated night-flight as delusion | Inverted into demonology; the mass trials are early *modern*, not medieval |\n\n**The pattern is the interesting part.** In almost none of these did the losing side win the argument back. Redemption produced terror, fraud, and Northern exhaustion — not a refutation of Black citizenship. The Nuremberg Laws refuted nothing. Reversals are power reversals, not justification reversals: what changed was who could enforce what, usually when a new material incentive appeared (Baltic grain, sugar) or an old enforcement cost got too high (troops out of the South).\n\nThat cuts both ways for you. It protects the standard from [1] — no criterion-passing change was ever argumentatively defeated, so \"moral progress\" survives as a claim about *justification*. But it demolishes the ratchet. **Being right and being retained are independent variables.** The three criteria tell you a change was progress; they predict nothing about whether it lasts.\n\nOne case that genuinely bites: mid-century deinstitutionalization passed criterion 3 cleanly — asylum exposés, testimony of the confined — and delivered mass homelessness and jail-as-psychiatric-ward. Immanent critique can be correct about the target and wrong about the replacement.\n\nWhether the *causes* of reversal are the same as the causes of the original change is where [[4bdc7f32-196f-48c3-bed1-1fd2d2e28f8f]] goes.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:37:43.208632Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    },
+    {
+      "id": "7f197749-0be4-4ebf-b78e-59d6571e1b63",
+      "query": "What is the strongest slavery apologist’s rebuttal to this immanent critique, and does any part of it survive without special pleading?",
+      "response": "**The strongest rebuttal isn't a defense of slavery. It's a charge that the critique isn't evenhanded.** Three versions, in ascending order of survival.\n\n### 1. The hermeneutic objection (aimed at criterion 2)\nThornwell and Stringfellow's point: the shared authority — Scripture — plainly regulates slavery rather than condemning it, and Paul returns Onesimus. On flat literalism the South had the better text; abolitionists needed a trajectory reading (\"the spirit of the whole\"). Mark Noll's version: the crisis was theological, and the plain-sense hermeneutic that evangelical America had built its authority on delivered the wrong answer.\n\nThis lands. Immanent critique needs a *privileged reading* of the shared premises, and the choice of reading is exactly what's contested — so criterion 2 is weaker than it looks in general.\n\nBut not here. Southern exegesis couldn't stay literal: biblical slavery wasn't hereditary, racial, or perpetual, so sustaining the analogy required importing the racial premise — Ham, natural inferiority — which is precisely the empirical claim that fails criterion 1. The scriptural defense is only as good as the anthropology bolted to it.\n\n### 2. The tu quoque (Fitzhugh, Hammond)\n*Cannibals All!* (1857): your free-labor system starves its workers and discards them at 40; the slave is provided for in infancy, sickness, and age. Comparative mortality made this non-absurd — the US slave population grew by natural increase while Manchester's life expectancy sat near 30.\n\nIt dies on its own consistency. Fitzhugh followed the logic where it went: if slavery is justified by the incapacity of labor, it has nothing to do with race — slavery for white workers too. That is the argument without special pleading, and the South couldn't touch it. Every actual defender needed the racial premise to keep their own children out of the category. The one apologist who stayed consistent became unusable.\n\n### 3. The transition argument — this survives\nNot \"slavery is good\" but \"immediate abolition is catastrophic\": Saint-Domingue as exhibit A, and later, the mortality of American emancipation (Downs's smallpox epidemic), sharecropping, Redemption. This is your deinstitutionalization case from [[5351cf70-fdb0-4d78-a919-34dc2a717e49]] — right about the target, wrong about the replacement.\n\nIt survives as a claim about *sequencing*, and only that. It's also compromised in the mouths of the people who made it: Virginia's legislature rejected gradual emancipation in 1832, Delaware rejected compensated emancipation in 1862. Gradualism offered no gradual.\n\n**The residue worth worrying about** is Hammond's mudsill speech: every civilization rests on a degraded class, and yours is merely better at not looking. If criterion 3 condemns every institution once fully disclosed, it isn't discriminating between them — it's just measuring the strength of your stomach. That's the objection to take home, and it's aimed at your standard, not at abolition.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:39:39.433161Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    }
+  ],
+  "brief": "Every generation is sure it's more moral than the last — which is exactly what the last one thought. So when I call abolition progress, what am I claiming beyond “my side won”? I want a standard for “better” that the losers of a moral change could have accepted too, and a straight answer on whether abolition and the expanding moral circle meet it. Take the skeptical position seriously; I don't want reassurance.",
+  "caseDocuments": [],
+  "suggestions": [
+    {
+      "id": "90249392-2ccd-480a-9df8-a62294202101",
+      "parentNodeId": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "text": "Can the loser-acceptable standard misclassify changes—for example, vindicating a cruel reform or failing to vindicate a genuine improvement?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:35:36.219821Z"
+    },
+    {
+      "id": "9140c436-4f0e-4537-9366-f147f28ec69c",
+      "parentNodeId": "1f180c84-2af3-4415-ab83-6bb4fb2cd49b",
+      "text": "Which proposed expansions of the moral circle pass all three criteria, and which conspicuously fail them?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:35:36.219821Z"
+    },
+    {
+      "id": "e33e1b17-1a90-4d11-acd5-8d54fb1c6096",
+      "parentNodeId": "5351cf70-fdb0-4d78-a919-34dc2a717e49",
+      "text": "How strong is the claim that no criterion-passing moral change has ever been argumentatively defeated, rather than merely reversed by force?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:37:50.897633Z"
+    },
+    {
+      "id": "cd454f1d-d357-4fbf-9b90-e3e6abb830c5",
+      "parentNodeId": "5351cf70-fdb0-4d78-a919-34dc2a717e49",
+      "text": "How should the standard evaluate reforms like deinstitutionalization when the old regime was indefensible but the replacement made many affected people worse off?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:37:50.897633Z"
+    },
+    {
+      "id": "d2d4e486-db6c-4434-8fc7-194e6b391d27",
+      "parentNodeId": "5351cf70-fdb0-4d78-a919-34dc2a717e49",
+      "text": "What political or institutional conditions make justified moral gains resilient to reversals driven by power and material incentives?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:37:50.897633Z"
+    },
+    {
+      "id": "8f584567-209a-42ac-80f1-7e1123d4b0c9",
+      "parentNodeId": "7f197749-0be4-4ebf-b78e-59d6571e1b63",
+      "text": "Can criterion 3 distinguish institutions that merely provoke revulsion when exposed from those whose survival actually depends on suppressing relevant evidence and testimony?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:39:50.047975Z"
+    },
+    {
+      "id": "3e63b62f-57a2-40bc-8dca-acda23e1f65d",
+      "parentNodeId": "7f197749-0be4-4ebf-b78e-59d6571e1b63",
+      "text": "What non-question-begging rule could privilege the abolitionists’ “trajectory” reading of shared premises over the apologists’ literal reading?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:39:50.047975Z"
+    },
+    {
+      "id": "56c11a34-3b21-4032-99d4-916cc47a81bb",
+      "parentNodeId": "7f197749-0be4-4ebf-b78e-59d6571e1b63",
+      "text": "What does the best historical evidence say the least harmful feasible path from American slavery to freedom actually was?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:39:50.047975Z"
+    }
+  ],
+  "declinedQuestions": []
+}
