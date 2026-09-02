@@ -1,7 +1,9 @@
 import { FC, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { isProviderKeyConfigured } from '../../client';
 import { useNodeContentStore } from '../../stores/nodeContentStore';
 import { useResearchStore } from '../../stores/researchStore';
+import { useUIStateStore } from '../../stores/uiStateStore';
 import { nodeDocumentBytes } from '../../utils/documentBudget';
 import { insertNewline } from '../../utils/insertNewline';
 import {
@@ -73,6 +75,38 @@ const SectionLabel: FC<{ children: string }> = ({ children }) => (
   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">
     {children}
   </span>
+);
+
+/**
+ * One section's failure, inline. Without the OpenAI key a retry can only fail
+ * again, so then "Add API key" leads and opens Settings — the same way out the
+ * answer view offers when its generation fails for lack of a key.
+ */
+const KickstartError: FC<{
+  message: string;
+  onRetry: () => void;
+  onAddApiKey?: () => void;
+}> = ({ message, onRetry, onAddApiKey }) => (
+  <div className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2">
+    <span className="min-w-0 text-[12px] text-rose-700">{message}</span>
+    <div className="flex flex-shrink-0 items-center gap-1.5">
+      {onAddApiKey && (
+        <button
+          onClick={onAddApiKey}
+          className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-medium text-white transition-colors hover:bg-rose-700"
+          data-testid="kickstart-add-api-key"
+        >
+          Add API key
+        </button>
+      )}
+      <button
+        onClick={onRetry}
+        className="rounded border border-rose-200 bg-white px-2 py-0.5 text-[11px] text-rose-700 transition-colors hover:bg-rose-50"
+      >
+        Try again
+      </button>
+    </div>
+  </div>
 );
 
 interface KickstartQuestionRowProps {
@@ -374,6 +408,12 @@ interface KickstartModalProps {
  */
 export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
   const applyKickstart = useResearchStore(s => s.applyKickstart);
+  const settingsOpen = useUIStateStore(s => s.showSettingsModal);
+  const setShowSettingsModal = useUIStateStore(s => s.setShowSettingsModal);
+  // Both generations run on OpenAI, so without that key neither can succeed:
+  // adding it — not retrying — is the way out of the error. Re-read whenever
+  // the settings modal opens or closes, so a key added there is seen at once.
+  const needsApiKey = !settingsOpen && !isProviderKeyConfigured('openai');
 
   const [notes, setNotes] = useState('');
 
@@ -423,13 +463,15 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !showLibrary) {
+      // Esc goes to whichever sheet is on top: the document library and the
+      // settings modal (opened from an error box) close themselves.
+      if (event.key === 'Escape' && !showLibrary && !settingsOpen) {
         requestClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [requestClose, showLibrary]);
+  }, [requestClose, showLibrary, settingsOpen]);
 
   // The brief grows with its content, up to a scroll cap
   useLayoutEffect(() => {
@@ -692,15 +734,11 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                   </div>
                 </div>
               ) : briefError ? (
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2">
-                  <span className="min-w-0 text-[12px] text-rose-700">{briefError}</span>
-                  <button
-                    onClick={() => void runBrief()}
-                    className="flex-shrink-0 rounded border border-rose-200 bg-white px-2 py-0.5 text-[11px] text-rose-700 transition-colors hover:bg-rose-50"
-                  >
-                    Try again
-                  </button>
-                </div>
+                <KickstartError
+                  message={briefError}
+                  onRetry={() => void runBrief()}
+                  onAddApiKey={needsApiKey ? () => setShowSettingsModal(true) : undefined}
+                />
               ) : (
                 <textarea
                   ref={briefTextareaRef}
@@ -767,15 +805,11 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                 )}
 
                 {questionsError && (
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2">
-                    <span className="min-w-0 text-[12px] text-rose-700">{questionsError}</span>
-                    <button
-                      onClick={() => void runQuestions(lastRequestMoreRef.current)}
-                      className="flex-shrink-0 rounded border border-rose-200 bg-white px-2 py-0.5 text-[11px] text-rose-700 transition-colors hover:bg-rose-50"
-                    >
-                      Try again
-                    </button>
-                  </div>
+                  <KickstartError
+                    message={questionsError}
+                    onRetry={() => void runQuestions(lastRequestMoreRef.current)}
+                    onAddApiKey={needsApiKey ? () => setShowSettingsModal(true) : undefined}
+                  />
                 )}
 
                 {!(questionsLoading && rows.length === 0) && (
