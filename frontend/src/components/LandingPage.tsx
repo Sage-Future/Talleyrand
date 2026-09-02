@@ -77,7 +77,7 @@ export const LandingPage: FC = () => {
             >
               open-source
             </a>
-            , but you need your own OpenAI or Anthropic key.
+            , but you need your own OpenAI key (Anthropic optional, for Claude answers).
           </p>
         </div>
 
