@@ -1,10 +1,13 @@
 """
 Tests for the generation manager's runtime registry — abandoning a live job
 (what lets a forced retry replace a frozen generation), freeing the slot of a
-task cancelled before it runs, and failing a stalled stream instead of hanging.
+task cancelled before it runs, failing a stalled stream instead of hanging,
+and letting go of the case once its answer is streaming.
 """
 
 import asyncio
+import gc
+import weakref
 from collections import deque
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -127,6 +130,9 @@ async def test_stalled_stream_fails_job_instead_of_hanging(monkeypatch):
     repo.fail.return_value = True
     monkeypatch.setattr(mgr, "_job_repo", lambda: repo)
     monkeypatch.setattr(mgr, "load_effective_graph", AsyncMock(return_value=object()))
+    monkeypatch.setattr(
+        manager_module, "build_question_tree", lambda _graph: SimpleNamespace(outline={})
+    )
 
     stream_closed = False
 
@@ -226,11 +232,71 @@ def _drain(channel: JobChannel) -> list[dict]:
 
 
 @pytest.mark.asyncio
+async def test_case_is_released_once_the_answer_streams(monkeypatch):
+    """
+    Every running answer loads its own copy of the case, documents and PDFs
+    included. Once its request is on its way nothing reads that copy again, so
+    it must be gone while the answer streams — not held until the job ends.
+    """
+    mgr = GenerationJobManager()
+    record = new_answer_record("g1", "u1", "n1")
+    params = AnswerParams(
+        openai_api_key="k",
+        anthropic_api_key="",
+        web_search_enabled=False,
+        verbosity="low",
+        cheat_sheet=False,
+    )
+    job = RuntimeJob(record=record, background=False, answer_params=params)
+    mgr.jobs[record.id] = job
+    mgr.answer_job_by_node[("g1", "n1")] = record.id
+
+    repo = AsyncMock()
+    repo.set_running.return_value = True
+    repo.complete_answer.return_value = True
+    monkeypatch.setattr(mgr, "_job_repo", lambda: repo)
+
+    class _Case:
+        """Stands in for the loaded case; watched for collection, never retained here."""
+
+    watched: list[weakref.ref] = []
+
+    async def _load(*_args, **_kwargs) -> _Case:
+        case = _Case()
+        watched.append(weakref.ref(case))
+        return case
+
+    monkeypatch.setattr(mgr, "load_effective_graph", _load)
+    monkeypatch.setattr(
+        manager_module, "build_question_tree", lambda _graph: SimpleNamespace(outline={})
+    )
+
+    released_before_first_chunk: bool | None = None
+
+    async def _stream():
+        nonlocal released_before_first_chunk
+        gc.collect()
+        released_before_first_chunk = watched[0]() is None
+        yield TextChunk("The answer.")
+
+    async def _fake_query(**_kwargs):
+        return _stream()
+
+    monkeypatch.setattr(manager_module, "do_research_query", _fake_query)
+
+    await mgr._run_answer(job)
+
+    assert released_before_first_chunk is True
+    assert record.status == "done"
+    assert repo.complete_answer.await_args.args[1] == "The answer."
+
+
+@pytest.mark.asyncio
 async def test_background_answers_beyond_the_cap_wait_their_turn(monkeypatch):
     """
-    The cap is what bounds the instance's peak memory: every running generation
-    holds its own copy of the case and ships it to the provider. Nothing may
-    raise it — there is no per-user limit any more, only this constant.
+    The cap is what bounds the instance's peak memory: every generation loads
+    its own copy of the case to build and send its request. Nothing may raise
+    it — there is no per-user limit any more, only this constant.
     """
     mgr = GenerationJobManager()
 

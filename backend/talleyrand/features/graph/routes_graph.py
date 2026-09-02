@@ -5,7 +5,8 @@ Graph API router.
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Response, status
+from pydantic_core import to_json
 
 from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dtos import (
@@ -119,8 +120,14 @@ async def get(
         manager.live_job_ids(),
     )
     formatted_data = SaveGraphDataDTO(id=graph_id, **graph_data.model_dump())
-    # acked_job_ids is request-only (client -> server on PUT); keep it off reads
-    return formatted_data.model_dump(by_alias=True, mode="json", exclude={"acked_job_ids"})
+    # acked_job_ids is request-only (client -> server on PUT); keep it off reads.
+    # Serialized straight to bytes: a full-context case is megabytes, and the
+    # default path would build the JSON text and its encoding as two more
+    # copies of it on the way out.
+    return Response(
+        content=to_json(formatted_data, by_alias=True, exclude={"acked_job_ids"}),
+        media_type="application/json",
+    )
 
 
 async def get_all_metadata(

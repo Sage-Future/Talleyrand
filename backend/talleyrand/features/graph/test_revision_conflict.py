@@ -80,9 +80,11 @@ async def test_matching_revision_updates_conditionally_and_bumps():
     returned = await repo.save("user@example.com", "graph-1", _graph(revision=7))
 
     assert returned == 8
-    (filter_doc, update_doc, _), *_ = collection.update_calls
+    (filter_doc, update_doc, kwargs), *_ = collection.update_calls
     # The write must be conditional on the revision the payload was built on
     assert filter_doc["revision"] == 7
+    # Only the new revision comes back, never the whole case
+    assert kwargs["projection"] == {"revision": 1}
     assert update_doc["$inc"] == {"revision": 1}
     # revision is advanced only via $inc, never overwritten from the payload
     assert "revision" not in update_doc["$set"]

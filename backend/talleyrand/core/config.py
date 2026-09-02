@@ -121,7 +121,7 @@ class Settings(BaseSettings):
 
     log_llm_requests: bool = Field(
         default=False,
-        description="Log full LLM prompts and responses to console",
+        description="Log full LLM responses to console",
     )
 
 

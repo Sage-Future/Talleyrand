@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from urllib.parse import urlparse
 
+import httpx
 from anthropic import APIError as AnthropicAPIError
 from anthropic import AsyncAnthropic
 from anthropic.types import (
@@ -38,7 +39,7 @@ from openai.types.responses import (
 )
 from pydantic import BaseModel
 
-from talleyrand.core.llm_logging import log_prompt, log_response, log_structured_response
+from talleyrand.core.llm_logging import log_response, log_structured_response
 from talleyrand.core.model_settings import ModelConfig, Provider
 from talleyrand.core.token_counter import count_tokens
 
@@ -157,15 +158,6 @@ async def parse_structured[SchemaT: BaseModel](
     StructuredGenerationError. user_content is either a plain string or
     Responses-API content parts (input_text + input_file) when PDFs are attached.
     """
-    log_prompt(
-        caller=caller,
-        model=model,
-        system_prompt=system_prompt,
-        user_prompt=user_content
-        if isinstance(user_content, str)
-        else "[structured input with PDFs]",
-    )
-
     client = AsyncOpenAI(api_key=api_key)
     try:
         response = await client.responses.parse(
@@ -398,14 +390,6 @@ async def stream_text(
     The request is sent before the generator is returned, so provider errors
     (e.g. invalid API key) raise here rather than during iteration.
     """
-    log_prompt(
-        caller=caller,
-        model=model.id,
-        system_prompt=instructions,
-        user_prompt="[structured input with PDFs]"
-        if pdf_documents
-        else cached_prefix + user_prompt,
-    )
     if pdf_documents:
         logger.info(f"Attaching {len(pdf_documents)} PDF document(s) to request")
 
@@ -433,6 +417,32 @@ async def stream_text(
         web_search_enabled=web_search_enabled,
         verbosity=verbosity,
     )
+
+
+def _release_request_body(stream: object) -> None:
+    """
+    Let go of a streaming request's body once the provider has started answering.
+
+    httpx keeps the encoded body on `response.request` for as long as the
+    response object lives, and httpcore holds the very same ByteStream through
+    the reader of the response body; a streamed answer keeps both alive until
+    the last token — minutes. For a full-context case that body is the whole
+    case, every text document and every PDF, held once per running answer for
+    nothing: it was sent in full before the first response byte arrived, a
+    streaming request is never retried once its response has started, and
+    nothing downstream reads it back.
+
+    This reaches into httpx internals (its version is pinned), so it touches
+    only the exact shapes it expects — a real httpx response carrying an
+    in-memory body — and leaves anything else alone.
+    """
+    response = getattr(stream, "response", None)
+    if not isinstance(response, httpx.Response):
+        return
+    request = response.request
+    if isinstance(request.stream, httpx.ByteStream):
+        request.stream._stream = b""
+    request._content = b""
 
 
 async def _stream_openai(
@@ -479,6 +489,7 @@ async def _stream_openai(
         text={"verbosity": verbosity},
         stream=True,
     )
+    _release_request_body(stream)
 
     async def stream_generator() -> AsyncGenerator[StreamChunk, None]:
         """Yield text deltas and web-search sources from the Responses API stream."""
@@ -615,6 +626,7 @@ async def _stream_anthropic(
         stream = await client.beta.messages.create(**request_kwargs)
     else:
         stream = await client.messages.create(**request_kwargs)
+    _release_request_body(stream)
 
     async def stream_generator() -> AsyncGenerator[StreamChunk, None]:
         """Yield text deltas with web-search citations woven in as Markdown links."""
