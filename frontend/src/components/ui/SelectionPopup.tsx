@@ -34,6 +34,9 @@ export const SelectionPopup: FC<SelectionPopupProps> = ({
   onSuggestionSelect,
   onHighlight,
 }) => {
+  // Wraps the popup and its suggestion list, so an outside click can tell
+  // "still in the popup" from "somewhere else".
+  const rootRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -70,6 +73,18 @@ export const SelectionPopup: FC<SelectionPopupProps> = ({
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  // Clicking anywhere outside dismisses the popup, same as the close button.
+  // Bound on mousedown so the popup is gone before the click lands, and so a
+  // drag that starts outside never leaves a stale popup behind.
+  useEffect(() => {
+    const handleOutsideMouseDown = (event: MouseEvent) => {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      onClose();
+    };
+    document.addEventListener('mousedown', handleOutsideMouseDown);
+    return () => document.removeEventListener('mousedown', handleOutsideMouseDown);
   }, [onClose]);
 
   // The native selection survives while the popup is open (nothing rewrites
@@ -170,7 +185,9 @@ export const SelectionPopup: FC<SelectionPopupProps> = ({
   };
 
   return (
-    <>
+    // display:contents — the wrapper groups the two floating layers for the
+    // outside-click check without introducing a box of its own.
+    <div ref={rootRef} className="contents">
       <div
         ref={popupRef}
         className="absolute bg-white border border-gray-200 rounded-xl p-1 pr-3 flex gap-1 items-start shadow-2xl min-w-[400px] z-[9999]"
@@ -277,6 +294,6 @@ export const SelectionPopup: FC<SelectionPopupProps> = ({
           onHover={setSelectedSuggestionIndex}
         />
       )}
-    </>
+    </div>
   );
 };
