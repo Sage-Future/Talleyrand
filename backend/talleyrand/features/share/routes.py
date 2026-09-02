@@ -5,7 +5,8 @@ Share API handlers.
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Response, status
+from pydantic_core import to_json
 
 from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dtos import (
@@ -92,7 +93,9 @@ async def get_shared_graph(
         suggestions=graph_data.suggestions,
         declined_questions=graph_data.declined_questions,
     )
-    return dto.model_dump(by_alias=True, mode="json")
+    # Straight to bytes: a shared case carries its documents, and the default
+    # path would build the JSON text and its encoding as two more copies.
+    return Response(content=to_json(dto, by_alias=True), media_type="application/json")
 
 
 async def copy_shared_graph(

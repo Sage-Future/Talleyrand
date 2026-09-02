@@ -1,0 +1,684 @@
+{
+  "name": "Personality Trait Validity",
+  "nodes": [
+    {
+      "id": "a445518b-c46c-48b9-afe6-11ae6fd6225f"
+    },
+    {
+      "id": "da5b6eb6-a868-432f-95e7-3ec8e111137b"
+    },
+    {
+      "id": "676e7165-0f4c-4f47-8edf-c0ba50df47f6"
+    },
+    {
+      "id": "75e256b9-abe8-46df-bb2e-57169646965e"
+    },
+    {
+      "id": "b73f8a9e-5bae-4144-bfe2-10339b726bb0"
+    }
+  ],
+  "edges": [
+    {
+      "id": "c98e2230-691b-4e90-9daa-867d187abfd0",
+      "source": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "target": "da5b6eb6-a868-432f-95e7-3ec8e111137b"
+    },
+    {
+      "id": "2374c2f7-6d0f-409f-90c1-8d75f7d43496",
+      "source": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "target": "676e7165-0f4c-4f47-8edf-c0ba50df47f6"
+    },
+    {
+      "id": "6dcefe89-7e19-471d-b61b-cc0c20f20d8e",
+      "source": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "target": "75e256b9-abe8-46df-bb2e-57169646965e"
+    },
+    {
+      "id": "fdc5c114-fdbb-42c5-b05b-f3cfbc260a12",
+      "source": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "target": "b73f8a9e-5bae-4144-bfe2-10339b726bb0"
+    }
+  ],
+  "nodeContents": [
+    {
+      "id": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "query": "What do Big Five traits actually predict?",
+      "response": "## The short version\n\nEffects are real and mostly replicate, but they live in the $r = 0.1$–$0.3$ band. The best benchmark study here is Soto's LOOPR project: ([How Replicable Are Links Between Personality Traits and Consequential Life Outcomes? The Life Outcomes of Personality Replication Project - Christopher J. Soto, 2019](https://journals.sagepub.com/doi/abs/10.1177/0956797619831612)) preregistered, high-powered replications (median N = 1,504) of 78 published trait–outcome associations, of which 87% were significant in the expected direction, with replication effects typically 77% as strong as the originals. So: a mostly honest literature, with effect sizes inflated maybe 25% by publication bias and researcher degrees of freedom.\n\n## Where the signal actually is\n\n| Outcome | Main trait | Rough magnitude |\n|---|---|---|\n| Life satisfaction / subjective well-being | Neuroticism (−), Extraversion (+) | $r \\approx .3$–.5 — the largest in the field |\n| Internalizing disorders (depression, anxiety) | Neuroticism | $r \\approx .4+$; arguably the same construct measured twice |\n| Job performance | Conscientiousness | operational $r \\approx .19$ decontextualized, ~.25 for \"at work\" measures |\n| Academic grades | Conscientiousness | $r \\approx .2$, roughly IQ-sized at university level |\n| Longevity / mortality | Conscientiousness | $r \\approx .1$, robust across cohorts |\n| Divorce, relationship dissolution | Neuroticism (+), Agreeableness (−) | $r \\approx .2$ |\n| Political ideology | Openness (liberal), Conscientiousness (conservative) | $r \\approx .2$ |\n| Income | Conscientiousness (+), Agreeableness (−) | $r \\approx .1$–.2 |\n\nTwo structural facts worth holding onto. First, the workhorses are Conscientiousness and Neuroticism; Openness and Agreeableness predict tastes and relationships more than achievement. Second, the field's estimates keep shrinking under better methods — ([Revisiting the design of selection systems in light of new findings regarding the validity of widely used predictors | Industrial and Organizational Psychology | Cambridge Core](https://www.cambridge.org/core/journals/industrial-and-organizational-psychology/article/revisiting-the-design-of-selection-systems-in-light-of-new-findings-regarding-the-validity-of-widely-used-predictors/A20984B138319E3D432E643978BF026D)) Sackett et al. (2022) found flaws in range-restriction corrections in prior selection meta-analyses and produced revised, often substantially lower, validity estimates.\n\nThe obvious next fork: whether $r = .2$ is impressive or trivial (it depends entirely on whether you're picking one person or a population), or whether these correlations survive when predictor and outcome aren't both self-reported.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:07:12.909328Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://journals.sagepub.com/doi/abs/10.1177/0956797619831612",
+          "title": "How Replicable Are Links Between Personality Traits and Consequential Life Outcomes? The Life Outcomes of Personality Replication Project - Christopher J. Soto, 2019",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.cambridge.org/core/journals/industrial-and-organizational-psychology/article/revisiting-the-design-of-selection-systems-in-light-of-new-findings-regarding-the-validity-of-widely-used-predictors/A20984B138319E3D432E643978BF026D",
+          "title": "Revisiting the design of selection systems in light of new findings regarding the validity of widely used predictors | Industrial and Organizational Psychology | Cambridge Core",
+          "pageAge": "May 9, 2023",
+          "cited": true
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/30950321/",
+          "title": "How Replicable Are Links Between Personality Traits and Consequential Life Outcomes? The Life Outcomes of Personality Replication Project - PubMed",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.semanticscholar.org/paper/How-Replicable-Are-Links-Between-Personality-Traits-Soto/f8de6a9203b5d081ce50c6082f846ea193d59fe8",
+          "title": "[PDF] How Replicable Are Links Between Personality Traits and Consequential Life Outcomes? The Life Outcomes of Personality Replication Project | Semantic Scholar",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/profile/Christopher-Soto-5/publication/330805079_How_Replicable_Are_Links_Between_Personality_Traits_and_Consequential_Life_Outcomes_The_Life_Outcomes_Of_Personality_Replication_Project/links/5e7cbb39458515efa0ac1114/How-Replicable-Are-Links-Between-Personality-Traits-and-Consequential-Life-Outcomes-The-Life-Outcomes-Of-Personality-Replication-Project.pdf",
+          "title": "Replicability of Trait-Outcome Associations 1 Soto, C. J. ( ...",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://neurosciencenews.com/personality-trait-life-outcomes-11014/",
+          "title": "Most links between personality traits and life outcomes are replicable - Neuroscience News",
+          "pageAge": "April 5, 2019",
+          "cited": false
+        },
+        {
+          "url": "https://www.sciencedaily.com/releases/2019/04/190405124258.htm",
+          "title": "Most links between personality traits and life outcomes are replicable | ScienceDaily",
+          "pageAge": "February 11, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://www.psychologicalscience.org/news/releases/personality-traits-life-outcomes-replication.html",
+          "title": "﻿Most Links Between Personality Traits and Life Outcomes Are Replicable, Study Shows",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/330805079_How_Replicable_Are_Links_Between_Personality_Traits_and_Consequential_Life_Outcomes_The_Life_Outcomes_Of_Personality_Replication_Project",
+          "title": "(PDF) How Replicable Are Links Between Personality Traits and Consequential Life Outcomes? The Life Outcomes Of Personality Replication Project",
+          "pageAge": "April 1, 2019",
+          "cited": false
+        },
+        {
+          "url": "https://www.colby.edu/wp-content/uploads/2019/05/Soto_2019.pdf",
+          "title": "How Replicable Are Links Between Personality Traits and ...",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.siop.org/tip-article/is-cognitive-ability-the-best-predictor-of-job-performance-new-research-says-its-time-to-think-again/",
+          "title": "Is Cognitive Ability the Best Predictor of Job Performance? New Research Says It’s Time to Think Again – Society for Industrial and Organizational Psychology",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://experts.umn.edu/en/publications/insights-from-an-updated-personnel-selection-meta-analytic-matrix/",
+          "title": "Insights From an Updated Personnel Selection Meta-Analytic Matrix: Revisiting General Mental Ability Tests’ Role in the Validity–Diversity Trade-Off - Experts@Minnesota",
+          "pageAge": "May 2, 2024",
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/370641674_Revisiting_the_design_of_selection_systems_in_light_of_new_findings_regarding_the_validity_of_widely_used_predictors",
+          "title": "(PDF) Revisiting the design of selection systems in light of new findings regarding the validity of widely used predictors",
+          "pageAge": "July 29, 2026",
+          "cited": false
+        },
+        {
+          "url": "https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0141468",
+          "title": "The Validity of Conscientiousness Is Overestimated in the Prediction of Job Performance | PLOS One",
+          "pageAge": "October 30, 2015",
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4627756/",
+          "title": "The Validity of Conscientiousness Is Overestimated in the Prediction of Job Performance",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/38695805/",
+          "title": "Insights from an updated personnel selection meta-analytic matrix: Revisiting general mental ability tests' role in the validity-diversity trade-off - PubMed",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.master-hr.com/insights/insights-from-sackett-et-al-2023/",
+          "title": "Insights from Sackett et al. (2022, 2023): Towards a Fuller Understanding of the Validity of Selection tools",
+          "pageAge": "February 26, 2024",
+          "cited": false
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/16435937/",
+          "title": "A meta-analytic investigation of conscientiousness in the prediction of job performance: examining the intercorrelations and the incremental validity of narrow traits - PubMed",
+          "pageAge": null,
+          "cited": false
+        }
+      ],
+      "sourcesFound": 18
+    },
+    {
+      "id": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "query": "Is a correlation of .3 big or small?",
+      "response": "## Two different questions hide in this one\n\n**If you're predicting one person**, $r = .3$ is nearly worthless. Knowing someone's Conscientiousness leaves the residual SD of the outcome at $\\sqrt{1-r^2} = 0.954$ — you have narrowed your uncertainty by **4.6%**. That is the honest answer to \"should I use a personality test to decide about this individual?\" (Squaring $r$ into \"9% of variance\" is the classic way to make this sound even worse than it is; ([Evaluating Effect Size in Psychological Research](https://www2.psych.ubc.ca/~schaller/528Readings/FunderOzer2019.pdf)) Funder and Ozer flag squaring effect-size $r$s as one of the two most common misinterpretations.)\n\n**If you're sorting a population**, the same number is powerful. With bivariate normal data and $r = .3$:\n\n| Group | Chance of landing in the top decile of the outcome |\n|---|---|\n| Top decile on the trait | ~22% |\n| Base rate | 10% |\n| Bottom decile on the trait | ~3% |\n\nA 7:1 ratio between the tails, from a correlation you cannot see in any single case. This is why $r = .2$ is simultaneously useless for hiring *this* candidate and valuable for a firm making 10,000 hires.\n\n## Where .3 sits in the field ([Effect size guidelines for individual differences researchers - ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/S0191886916308194))\n\nGignac and Szodorai collated 708 meta-analytic correlations from individual-differences research; the 25th, 50th and 75th percentiles were .10, .20 and .30. So $r=.3$ is the *75th percentile of everything the field has ever found* — ([2 Benchmarks – Guide to Effect Sizes and Confidence Intervals](https://matthewbjane.quarto.pub/Benchmarks.html)) on Funder and Ozer's revised guidelines it counts as a large effect, potentially powerful in both the short and long run, while ([Automated Interpretation of Indices of Effect Size • effectsize](https://easystats.github.io/effectsize/articles/interpret.html)) $r \\geq .40$ is likely \"a gross overestimate that will rarely be found in a large sample or in a replication.\"\n\nThe irony: .30 was originally the *indictment*. Mischel's 1968 critique named it the \"personality coefficient\" — the ceiling that supposedly proved traits didn't exist. The number didn't move; the interpretation did, once people noticed that situations and clinical interventions don't beat it either.\n\nThe live question is therefore not the size but the source: does .3 survive when the outcome isn't self-reported?",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:09:04.769434Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://matthewbjane.quarto.pub/Benchmarks.html",
+          "title": "2 Benchmarks – Guide to Effect Sizes and Confidence Intervals",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www2.psych.ubc.ca/~schaller/528Readings/FunderOzer2019.pdf",
+          "title": "Evaluating Effect Size in Psychological Research",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://easystats.github.io/effectsize/articles/interpret.html",
+          "title": "Automated Interpretation of Indices of Effect Size • effectsize",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.sciencedirect.com/science/article/abs/pii/S0191886916308194",
+          "title": "Effect size guidelines for individual differences researchers - ScienceDirect",
+          "pageAge": "July 2, 2016",
+          "cited": true
+        },
+        {
+          "url": "https://www.semanticscholar.org/paper/Evaluating-Effect-Size-in-Psychological-Research:-Funder-Ozer/d60c9e809219808908ab47e7c2061744cab1721b",
+          "title": "[PDF] Evaluating Effect Size in Psychological Research: Sense and Nonsense | Semantic Scholar",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://journals.sagepub.com/doi/10.1177/2515245919847202",
+          "title": "Evaluating Effect Size in Psychological Research: Sense and Nonsense - David C. Funder, Daniel J. Ozer, 2019",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/332958263_Evaluating_Effect_Size_in_Psychological_Research_Sense_and_Nonsense",
+          "title": "Evaluating Effect Size in Psychological Research: Sense and Nonsense | Request PDF",
+          "pageAge": "May 8, 2019",
+          "cited": false
+        },
+        {
+          "url": "https://measuringu.com/an-introduction-to-effect-sizes/",
+          "title": "An Introduction to Effect Sizes – MeasuringU",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8460025/",
+          "title": "Recalibrating expectations about effect size: A multi-method survey of effect sizes in the ABCD study",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://research-repository.uwa.edu.au/en/publications/effect-size-guidelines-for-individual-differences-researchers/",
+          "title": "Effect size guidelines for individual differences researchers - the UWA Profiles and Research Repository",
+          "pageAge": "November 1, 2016",
+          "cited": false
+        },
+        {
+          "url": "https://www.semanticscholar.org/paper/Effect-size-guidelines-for-individual-differences-Gignac-Szodorai/466843de8ffb803b8f9e3f82b1acdfc77bb84fb2",
+          "title": "Effect size guidelines for individual differences researchers | Semantic Scholar",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://scite.ai/reports/effect-size-guidelines-for-individual-XP8eLl",
+          "title": "Effect size guidelines for individual differences researchers",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/305699288_Effect_size_guidelines_for_individual_differences_researchers",
+          "title": "Effect size guidelines for individual differences researchers | Request PDF",
+          "pageAge": "November 1, 2016",
+          "cited": false
+        },
+        {
+          "url": "https://www.academia.edu/100014168/Effect_size_guidelines_for_individual_differences_researchers",
+          "title": "(PDF) Effect size guidelines for individual differences researchers",
+          "pageAge": "January 1, 2016",
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6736231/",
+          "title": "Effect Size Guidelines, Sample Size Calculations, and Statistical Power in Gerontology",
+          "pageAge": null,
+          "cited": false
+        }
+      ],
+      "sourcesFound": 15
+    },
+    {
+      "id": "676e7165-0f4c-4f47-8edf-c0ba50df47f6",
+      "query": "Do traits change over a lifetime?",
+      "response": "## Two different questions hide in \"change\"\n\n**Rank-order** (does your position in the distribution hold?) and **mean-level** (does the whole cohort drift?). They have opposite-feeling answers.\n\n**Rank order rises but never locks.** Roberts & DelVecchio's meta-analysis of 152 longitudinal studies found test–retest consistency climbing with age: ([The rank-order consistency of personality traits from childhood to old age: a quantitative review of longitudinal studies - PubMed](https://pubmed.ncbi.nlm.nih.gov/10668348/)) ~.31 in childhood, .54 in the college years, .64 at 30, plateauing near .74 between 50 and 70 — all at a fixed 6.7-year interval. The sharper fact is what happens to long lags: stability doesn't just decay slowly, it ([(PDF) Personality Stability and Change: A Meta-Analysis of Longitudinal Studies](https://www.researchgate.net/publication/362021332_Personality_stability_and_change_A_meta-analysis_of_longitudinal_studies)) declines fast at first, then attenuates and appears to plateau at modest values around $r \\approx .20$. So the correlation between you-at-20 and you-at-60 is roughly the size of the trait–outcome effects in [1] — worth holding against [[da5b6eb6-a868-432f-95e7-3ec8e111137b]].\n\n**Mean levels move in one direction.** The maturity principle: ([\\[PDF\\] The rank-order consistency of personality traits from childhood to old age: a quantitative review of longitudinal studies. | Semantic Scholar](https://www.semanticscholar.org/paper/The-rank-order-consistency-of-personality-traits-to-Roberts-DelVecchio/bb8a2b002b961a97780d97bb04c7a6e04c3c6add)) people rise on conscientiousness, emotional stability and social dominance in young adulthood, and decline on openness (and social vitality) later. Cumulatively this is on the order of half a SD to a full SD across adulthood — larger than almost any single trait–outcome correlation.\n\n**Deliberate change is faster than development.** Roberts' meta-analysis of ([A Systematic Review of Personality Trait Change Through Intervention](https://www.ovid.com/journals/plbul/fulltext/10.1037/bul0000088~a-systematic-review-of-personality-trait-change-through)) 207 intervention studies found trait change of about $d = .37$ over an average of 24 weeks, concentrated in ([Differential Effects of Psychological Interventions in Online and Face-to-Face Settings on DSM-5 and ICD-11 Maladaptive Trait Domains: An Exploratory Pilot Study - PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC8236509/)) neuroticism and (low) extraversion, with much of it achieved within 8 weeks — ([Changing personality traits with the help of a digital ...](https://www.pnas.org/doi/pdf/10.1073/pnas.2017548118)) most change lands in the first weeks and plateaus at 8–10. Volitional change (apps, if–then plans) works too, but ([A systematic review of volitional personality change research | Communications Psychology](https://www.nature.com/articles/s44271-024-00167-5)) merely having a change goal is only weakly related to actually changing.\n\nThe obvious skeptical fork: how much of that 24-week $d=.37$ is *trait* change versus mood-congruent self-report — a depressed patient rating \"I worry a lot\" differently after therapy. Same identification problem as the self-report confound flagged at the end of [1].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:08:28.257676Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://www.researchgate.net/publication/362021332_Personality_stability_and_change_A_meta-analysis_of_longitudinal_studies",
+          "title": "(PDF) Personality Stability and Change: A Meta-Analysis of Longitudinal Studies",
+          "pageAge": "July 14, 2022",
+          "cited": true
+        },
+        {
+          "url": "https://www.semanticscholar.org/paper/The-rank-order-consistency-of-personality-traits-to-Roberts-DelVecchio/bb8a2b002b961a97780d97bb04c7a6e04c3c6add",
+          "title": "[PDF] The rank-order consistency of personality traits from childhood to old age: a quantitative review of longitudinal studies. | Semantic Scholar",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/10668348/",
+          "title": "The rank-order consistency of personality traits from childhood to old age: a quantitative review of longitudinal studies - PubMed",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.pnas.org/doi/pdf/10.1073/pnas.2017548118",
+          "title": "Changing personality traits with the help of a digital ...",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8236509/",
+          "title": "Differential Effects of Psychological Interventions in Online and Face-to-Face Settings on DSM-5 and ICD-11 Maladaptive Trait Domains: An Exploratory Pilot Study - PMC",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.ovid.com/journals/plbul/fulltext/10.1037/bul0000088~a-systematic-review-of-personality-trait-change-through",
+          "title": "A Systematic Review of Personality Trait Change Through Intervention",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.nature.com/articles/s44271-024-00167-5",
+          "title": "A systematic review of volitional personality change research | Communications Psychology",
+          "pageAge": "November 30, 2024",
+          "cited": true
+        },
+        {
+          "url": "http://jenni.uchicago.edu/Spencer_Conference/Representative%20Papers/Roberts%20&%20DelVecchio,%202000.pdf",
+          "title": "The Rank-Order Consistency of Personality Traits From ...",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/51588000_Stability_and_Change_of_Personality_Across_the_Life_Course_The_Impact_of_Age_and_Major_Life_Events_on_Mean-Level_and_Rank-Order_Stability_of_the_Big_Five",
+          "title": "(PDF) Stability and Change of Personality Across the Life Course: The Impact of Age and Major Life Events on Mean-Level and Rank-Order Stability of the Big Five",
+          "pageAge": "August 22, 2011",
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/12647686_The_Rank-Order_Consistency_of_Personality_Traits_from_Childhood_to_Old_Age_A_Quantitative_Review_of_Longitudinal_Studies",
+          "title": "(PDF) The Rank-Order Consistency of Personality Traits From Childhood to Old Age: A Quantitative Review of Longitudinal Studies",
+          "pageAge": "January 1, 2000",
+          "cited": false
+        },
+        {
+          "url": "https://experts.illinois.edu/en/publications/the-rank-order-consistency-of-personality-traits-from-childhood-t/",
+          "title": "The rank-order consistency of personality traits from childhood to old age: A quantitative review of longitudinal studies - Illinois Experts",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.diw.de/documents/dokumentenarchiv/17/diw_01.c.844061.de/soep2022_seifert_presentation.pdf",
+          "title": "The Development of the Rank-Order Stability of the Big ...",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://projects.ori.org/lrg/PDFs_papers/Personality_Stability_Change_Wiley.pdf",
+          "title": "Personality Stability and Change over Time",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.researchgate.net/publication/312105742_A_Systematic_Review_of_Personality_Trait_Change_Through_Intervention",
+          "title": "A Systematic Review of Personality Trait Change Through Intervention | Request PDF",
+          "pageAge": "January 5, 2017",
+          "cited": false
+        },
+        {
+          "url": "https://www.pnas.org/doi/10.1073/pnas.2017548118",
+          "title": "Changing personality traits with the help of a digital personality change intervention | PNAS",
+          "pageAge": "February 8, 2021",
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4250052/",
+          "title": "Personality Change following Internet-Based Cognitive Behavior Therapy for Severe Health Anxiety",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3290539/",
+          "title": "Effect of Chronic Escitalopram versus Placebo on Personality Traits in Healthy First-Degree Relatives of Patients with Depression: A Randomized Trial",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.goodreads.com/notes/112974860-how-to-know-a-person/118180648-scalar42/3d22b35b-0778-4ade-ad70-4f4440fa7ea2",
+          "title": "3d22b35b 0778 4ade ad70 4f4440fa7ea2",
+          "pageAge": null,
+          "cited": false
+        }
+      ],
+      "sourcesFound": 18
+    },
+    {
+      "id": "75e256b9-abe8-46df-bb2e-57169646965e",
+      "query": "Is Myers-Briggs any better?",
+      "response": "## Not a rival model — a lossy re-encoding\n\nMBTI's four axes are four of the Big Five, dichotomized. The classic convergences: ([Top-Down Influence? Predicting CEO Personality and Risk Impact from Speech Transcripts](https://arxiv.org/pdf/2201.07670)) introversion with extraversion at $r = -0.74$, intuition with openness at $0.72$, feeling with agreeableness at $0.44$, and perceiving with conscientiousness at $-0.49$. So the parts of MBTI that work are Big Five variance wearing Jungian labels; the parts that are distinctively Jungian — type dynamics, dominant/auxiliary function stacks — are the parts with essentially no empirical support.\n\nTwo specific losses:\n\n**Neuroticism is simply absent.** Look back at the table in [1]: the largest effects in the field — life satisfaction, internalizing disorders — are Neuroticism effects. ([Personality Tests Aren’t All the Same. Some Work Better Than Others | Scientific American](https://www.scientificamerican.com/article/personality-tests-arent-all-the-same-some-work-better-than-others/)) MBTI-style tests typically don't measure neuroticism, which predicts outcomes like career success, suicidal ideation and life satisfaction. You've deleted the most predictive column.\n\n**Dichotomizing a continuum.** Median-splitting a normally distributed score attenuates correlations by roughly $\\sqrt{2/\\pi} \\approx 0.8$ and throws away information about everyone near the middle — which is most people, since the scores aren't bimodal. This is the real source of the famous instability: ([MBTI Criticisms: Valid Concerns and Unfair Attacks](https://www.earlyyears.tv/mbti-framework-critical-analysis/)) between 39% and 76% of test-takers get a different four-letter type when retested after as little as five weeks, even though ([MBTI Facts | The Myers-Briggs Company](https://ap.themyersbriggs.com/themyersbriggs-mbti-facts.aspx)) the underlying scales have internal consistencies around .90 and test-retest correlations over .80 out to 15 weeks. Decent scales, catastrophic categories.\n\n**Head-to-head:** in a recent comparison across 37 life outcomes, the Big Five was about twice as accurate as an MBTI-style test, and adding MBTI results to Big Five ones produced no improvement — zero incremental validity.\n\nThe live question isn't MBTI specifically but whether *any* categorical model is defensible — whether personality types exist as replicable clusters rather than as splits imposed on continua.",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:08:50.507391Z",
+      "resolvedAt": "2026-09-02T16:09:32.868000Z",
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [
+        {
+          "url": "https://www.scientificamerican.com/article/personality-tests-arent-all-the-same-some-work-better-than-others/",
+          "title": "Personality Tests Aren’t All the Same. Some Work Better Than Others | Scientific American",
+          "pageAge": "February 20, 2025",
+          "cited": true
+        },
+        {
+          "url": "https://arxiv.org/pdf/2201.07670",
+          "title": "Top-Down Influence? Predicting CEO Personality and Risk Impact from Speech Transcripts",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://ap.themyersbriggs.com/themyersbriggs-mbti-facts.aspx",
+          "title": "MBTI Facts | The Myers-Briggs Company",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://www.earlyyears.tv/mbti-framework-critical-analysis/",
+          "title": "MBTI Criticisms: Valid Concerns and Unfair Attacks",
+          "pageAge": null,
+          "cited": true
+        },
+        {
+          "url": "https://arxiv.org/pdf/2509.11115",
+          "title": "\"Pragmatic Tools or Empowering Friends?\" Discovering and Co-Designing Personality-Aligned AI Writing Companions",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://arxiv.org/pdf/2606.00860",
+          "title": "GenPT: Beyond Self-Report for Reliable LLM Psychometrics via Generative Projective Testing",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.earlyyears.tv/mbti-vs-big-five-personality-test/",
+          "title": "MBTI vs Big Five: Which Personality Test Should You Trust?",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://onlinelibrary.wiley.com/doi/10.1002/jcad.70006",
+          "title": "A 25‐Year Review and Psychometric Synthesis of the Myers–Briggs Type Indicator (MBTI) – Form M - Erford - 2025 - Journal of Counseling & Development - Wiley Online Library",
+          "pageAge": "August 19, 2025",
+          "cited": false
+        },
+        {
+          "url": "https://arxiv.org/pdf/2103.09632",
+          "title": "Inferred vs traditional personality assessment: are we predicting the same thing?",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://arxiv.org/pdf/2212.06711",
+          "title": "On Text-based Personality Computing: Challenges and Future Directions",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://digitalcommons.liberty.edu/cgi/viewcontent.cgi?article=2294&context=honors",
+          "title": "What the Myers Briggs Type Indicator Overlooks Mikayla A",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.earlyyears.tv/mbti-test-accuracy/",
+          "title": "MBTI Test Accuracy: Why You Keep Getting Different Results",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.myersbriggs.org/research-and-library/validity-reliability/",
+          "title": "Reliability and Validity of the Myers-Briggs Type Indicator<sup>®</sup> Instrument",
+          "pageAge": "July 20, 2023",
+          "cited": false
+        },
+        {
+          "url": "https://people.wku.edu/richard.miller/MBTI%20reliability%20validity.pdf",
+          "title": "http://epm.sagepub.com Educational and Psychological Measurement",
+          "pageAge": null,
+          "cited": false
+        },
+        {
+          "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8566921/",
+          "title": "Test–Retest Reliability and Reliable Change Estimates for Four Mobile Cognitive Tests Administered Virtually in Community-Dwelling Adults",
+          "pageAge": null,
+          "cited": false
+        }
+      ],
+      "sourcesFound": 15
+    },
+    {
+      "id": "b73f8a9e-5bae-4144-bfe2-10339b726bb0",
+      "query": "Why do effect sizes shrink on replication?",
+      "response": "## Nothing decays — the published number was never an unbiased estimate\n\nThe dominant mechanism is a selection filter. Suppose the true correlation is $\\rho = .20$ and the original study had $N = 50$: $SE \\approx .14$, so significance requires an observed $r \\ge .27$. Conditional on clearing that bar, the *expected* published $r$ is about **.36** — 80% inflation, with no dishonesty anywhere in the chain. At $N = 300$ the same filter inflates by ~3%. This is Gelman & Carlin's **Type M (magnitude) error**: the exaggeration ratio is essentially a function of power alone, and it is invisible from inside any single paper.\n\nThree contributors stack on top of it:\n\n- **Forking paths.** Every unreported covariate set, outcome variant or subgroup split multiplies the effective number of tests, which sharpens the same significance filter without appearing in the p-value.\n- **Estimand drift.** Replications use different populations, shorter scales (lower reliability → attenuation) and different variance in the predictor. That's continuous with the range-restriction problem Sackett et al. exposed in [[a445518b-c46c-48b9-afe6-11ae6fd6225f]] — not bias, just a different quantity.\n- **Selection of what gets replicated.** Studies are chosen for replication because they're notable, i.e. because their estimates were extreme.\n\n## Why personality shrank less than the rest of psychology\n\nThe Open Science Collaboration's 2015 replications of social/cognitive psychology saw mean $r$ fall from ~.40 to ~.20 — roughly half. LOOPR's 77% retention is the field's good news, and it follows mechanically from the first point: personality findings typically came from large archival panels rather than $N = 40$ lab manipulations, so the winner's curse had less room to operate. Robust designs, not virtuous researchers.\n\n**Practical rule:** apply a shrinkage prior of ~0.75 to a published personality $r$, harsher (0.5 or worse) when $N$ is small, the finding is surprising, or the result is an interaction. That's usually the difference between the \"large effect\" band and the median finding in [[da5b6eb6-a868-432f-95e7-3ec8e111137b]].",
+      "selectedModel": "claude-opus-5-max",
+      "documents": [],
+      "answeredAt": "2026-09-02T16:10:18.993407Z",
+      "resolvedAt": null,
+      "lovedAt": null,
+      "parentSelectedText": null,
+      "parentSelectedPrefix": null,
+      "parentSelectedSuffix": null,
+      "selectionSuggestions": [],
+      "selections": [],
+      "highlights": [],
+      "cheatSheet": null,
+      "sources": [],
+      "sourcesFound": 0
+    }
+  ],
+  "brief": "I want to understand personality psychology better. The Big Five keeps being called “the scientific one” — what do its traits actually predict, how big are those effects really, and how well have they been replicated? I already know the pop typologies are weak, so don't spend my time debunking horoscopes.",
+  "caseDocuments": [],
+  "suggestions": [
+    {
+      "id": "69070651-aa24-41d3-916b-6ceb810883f9",
+      "parentNodeId": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "text": "What does an effect of r = .2 imply for individual prediction versus population-level decisions?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:07:17.840144Z"
+    },
+    {
+      "id": "9e357eff-9ed7-4de4-a79b-3fa9f02e8a1c",
+      "parentNodeId": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "text": "How much do Big Five associations shrink when traits and outcomes are measured independently rather than by the same self-report method?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:07:17.840144Z"
+    },
+    {
+      "id": "88c34295-89d1-4a8d-ac5a-0cb68d18e895",
+      "parentNodeId": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "text": "How much predictive value do Big Five traits add beyond IQ, demographics, and prior behavior?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:07:17.840144Z"
+    },
+    {
+      "id": "3c4d9458-7362-4ad0-8b8a-d2d9dc00196a",
+      "parentNodeId": "676e7165-0f4c-4f47-8edf-c0ba50df47f6",
+      "text": "How much of the apparent personality change after therapy survives informant reports, behavioral measures, and controls for symptom improvement?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:08:36.989092Z"
+    },
+    {
+      "id": "702abf63-c32b-4d42-8dc2-4b5b202a7b7c",
+      "parentNodeId": "676e7165-0f4c-4f47-8edf-c0ba50df47f6",
+      "text": "When people deliberately change a trait, do the outcomes associated with that trait—such as grades, relationships, or well-being—change accordingly?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:08:36.989092Z"
+    },
+    {
+      "id": "d6fba4c1-2363-4f01-a672-a9d80c547c3b",
+      "parentNodeId": "676e7165-0f4c-4f47-8edf-c0ba50df47f6",
+      "text": "How confidently can longitudinal studies separate genuine age-related maturation from cohort effects and selective attrition?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:08:36.989092Z"
+    },
+    {
+      "id": "0e8efeed-d250-42e2-bdb6-595f0314e0f0",
+      "parentNodeId": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "text": "How sensitive is the claimed 7:1 tail ratio to the assumptions of normality, reliable measurement, and a linear trait–outcome relationship?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:10.010249Z"
+    },
+    {
+      "id": "a79e61fd-69da-4acb-8dbf-cf9da36c0bf1",
+      "parentNodeId": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "text": "For a real selection decision, how do the base rate, selection rate, and costs of false positives determine whether an r = .3 predictor is useful?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:10.010249Z"
+    },
+    {
+      "id": "10b01b1f-66f5-4883-947b-b41d148ea35a",
+      "parentNodeId": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "text": "Is calling r = .3 “nearly worthless” for individual prediction statistically justified, or does the residual-SD framing understate meaningful probability updates?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:10.010249Z"
+    },
+    {
+      "id": "77623669-1b74-42bc-b8cd-fa5ae2bda766",
+      "parentNodeId": "75e256b9-abe8-46df-bb2e-57169646965e",
+      "text": "Do personality data contain any replicable clusters that justify genuine “types,” or are the major traits continuously distributed?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:35.673910Z"
+    },
+    {
+      "id": "27ae9bb9-864c-4eb7-83fe-52093a7521c9",
+      "parentNodeId": "75e256b9-abe8-46df-bb2e-57169646965e",
+      "text": "How strong is the evidence that MBTI adds zero predictive validity beyond the Big Five, and has that head-to-head result replicated?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:35.673910Z"
+    },
+    {
+      "id": "7e9cd86e-5515-4c8d-87de-5e45f1e15b95",
+      "parentNodeId": "75e256b9-abe8-46df-bb2e-57169646965e",
+      "text": "If MBTI’s underlying scales are reasonably reliable, could using its continuous scores retain useful predictive value despite the failure of four-letter categories?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:09:35.673910Z"
+    },
+    {
+      "id": "858686bb-be17-47ae-9e33-65af30189c20",
+      "parentNodeId": "b73f8a9e-5bae-4144-bfe2-10339b726bb0",
+      "text": "How well supported is the proposed 0.75 shrinkage rule, and how should I adjust it using a study’s sample size, power, and analytic flexibility?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:10:25.558431Z"
+    },
+    {
+      "id": "7308e93d-61f6-4430-ad60-fbb514c17110",
+      "parentNodeId": "b73f8a9e-5bae-4144-bfe2-10339b726bb0",
+      "text": "How can replication studies distinguish winner’s-curse inflation from genuine effect heterogeneity across populations and measurement instruments?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:10:25.558431Z"
+    },
+    {
+      "id": "f9795154-2623-4495-9432-061d62855762",
+      "parentNodeId": "b73f8a9e-5bae-4144-bfe2-10339b726bb0",
+      "text": "Do preregistered, highly powered Big Five studies still shrink in later replications, or does the replication gap largely disappear under those conditions?",
+      "bigPicture": false,
+      "createdAt": "2026-09-02T16:10:25.558431Z"
+    },
+    {
+      "id": "743205fb-ab25-4a02-aba3-c6d9e6f3e330",
+      "parentNodeId": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "text": "What evidence would distinguish Big Five traits as causal dispositions from mere summaries of past behavior or shared causes that happen to predict future outcomes?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T16:10:35.050481Z"
+    },
+    {
+      "id": "780978c4-51aa-4f6f-bdd3-f74fff006fd5",
+      "parentNodeId": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "text": "How much predictive value survives when personality tests face real applicants who can fake, coach, adapt, and learn what institutions reward?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T16:10:35.050481Z"
+    },
+    {
+      "id": "f91a5755-6c46-45e9-a875-92a314bb8c5b",
+      "parentNodeId": "da5b6eb6-a868-432f-95e7-3ec8e111137b",
+      "text": "Why do employers and institutions keep buying personality tests despite weak individual prediction—what functions besides prediction are those tests serving?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T16:10:35.050481Z"
+    },
+    {
+      "id": "3d59d1dc-290d-40c4-be3c-9d3fd9541e76",
+      "parentNodeId": "a445518b-c46c-48b9-afe6-11ae6fd6225f",
+      "text": "How well do trait–outcome correlations transport across countries and historical periods, and which institutions determine whether a trait like conscientiousness actually pays?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T16:10:35.050481Z"
+    },
+    {
+      "id": "66eb3928-6afb-486d-892d-9ca9f5207317",
+      "parentNodeId": "676e7165-0f4c-4f47-8edf-c0ba50df47f6",
+      "text": "What is the theoretical ceiling on predicting decades-later outcomes from one Big Five measurement once test unreliability and lifetime personality change are included?",
+      "bigPicture": true,
+      "createdAt": "2026-09-02T16:10:35.050481Z"
+    }
+  ],
+  "declinedQuestions": []
+}

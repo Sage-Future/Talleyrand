@@ -1,7 +1,11 @@
 """
-LLM request/response logging utilities.
+LLM response logging utilities.
 
 Enable by setting LOG_LLM_REQUESTS=true in environment or .env file.
+
+Prompts are not logged. A research prompt is the whole case, documents
+included, and even deciding whether to log it meant assembling a copy first;
+the response is what is worth reading back.
 """
 
 import logging
@@ -13,29 +17,6 @@ from talleyrand.core.config import settings
 logger = logging.getLogger("talleyrand.llm")
 
 SEPARATOR = "=" * 80
-
-
-def log_prompt(
-    caller: str,
-    model: str,
-    system_prompt: str,
-    user_prompt: str,
-) -> None:
-    """Log the full LLM prompt (system + user) if logging is enabled."""
-    if not settings.log_llm_requests:
-        return
-
-    logger.info(
-        "\n%s\nLLM REQUEST [%s] model=%s\n%s\nSYSTEM PROMPT:\n%s\n%s\nUSER PROMPT:\n%s\n%s",
-        SEPARATOR,
-        caller,
-        model,
-        SEPARATOR,
-        system_prompt,
-        "-" * 80,
-        user_prompt,
-        SEPARATOR,
-    )
 
 
 def log_response(caller: str, response_text: str) -> None:

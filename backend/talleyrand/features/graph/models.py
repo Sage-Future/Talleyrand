@@ -3,7 +3,7 @@ Domain model for Graph data.
 """
 
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import bson
 from fastapi.params import Depends
@@ -28,6 +28,55 @@ from talleyrand.infra.db import get_db
 # answer away from unstorable. The frontend enforces a smaller 12MB budget on
 # attached documents; this is the server-side hard stop (HTTP 413 at the API).
 MAX_GRAPH_BYTES = 15 * 1024 * 1024
+
+
+# How much of the attached documents a load brings back. Their contents are
+# the bulk of a case — megabytes of text and base64 PDF against kilobytes of
+# questions and answers — and most readers never look at them: the cheat sheet
+# lists the documents by name, the suggesters inline the text ones only.
+# Leaving the rest in the database keeps such a reader's copy of the case
+# small, and every concurrent job holds its own copy.
+type DocumentLoad = Literal["full", "text_only", "names_only"]
+
+
+def _without_document_contents(documents: DocumentLoad) -> dict[str, Any]:
+    """
+    A $set stage blanking document contents in place, at the case level and
+    under every question. Ids, names and types survive, so a document is
+    still listed by name and a PDF is still known to be one; its content
+    becomes "", which DocumentDTO accepts. text_only keeps the text documents
+    whole and blanks only the PDFs.
+    """
+    content = (
+        {"$cond": [{"$eq": ["$$doc.type", "pdf"]}, "", "$$doc.content"]}
+        if documents == "text_only"
+        else ""
+    )
+
+    def blanked(field: str) -> dict[str, Any]:
+        return {
+            "$map": {
+                "input": {"$ifNull": [field, []]},
+                "as": "doc",
+                "in": {"$mergeObjects": ["$$doc", {"content": content}]},
+            }
+        }
+
+    return {
+        "caseDocuments": blanked("$caseDocuments"),
+        "nodeContents": {
+            "$map": {
+                "input": {"$ifNull": ["$nodeContents", []]},
+                "as": "question",
+                "in": {
+                    "$mergeObjects": [
+                        "$$question",
+                        {"documents": blanked("$$question.documents")},
+                    ]
+                },
+            }
+        },
+    }
 
 
 class GraphTooLargeError(Exception):
@@ -89,12 +138,31 @@ class GraphDataRepository:
     def __init__(self, db: AsyncDatabase[Any]) -> None:
         self.db = db
 
-    async def get_by_id(self, user_id: str, graph_id: str) -> tuple[str, GraphDocument] | None:
-        """Get graph data by ID for a specific user. Returns (graph_id, graph_data) tuple."""
+    async def get_by_id(
+        self, user_id: str, graph_id: str, *, documents: DocumentLoad = "full"
+    ) -> tuple[str, GraphDocument] | None:
+        """Get graph data by ID for a specific user. Returns (graph_id, graph_data) tuple.
 
-        data: dict[str, Any] | None = await self.db["graph_data"].find_one(
-            {"_id": graph_id, "userId": user_id}
-        )
+        `documents` says how much of the attached documents comes back (see
+        DocumentLoad): anything but "full" hands back a case whose document
+        contents are blank, for readers that never look at them.
+        """
+        query = {"_id": graph_id, "userId": user_id}
+        if documents == "full":
+            data: dict[str, Any] | None = await self.db["graph_data"].find_one(query)
+        else:
+            # A find projection would have to name every other field to keep
+            # it; a $set stage rewrites the two document lists and leaves the
+            # rest of the document as it is.
+            cursor = await self.db["graph_data"].aggregate(
+                [
+                    {"$match": query},
+                    {"$limit": 1},
+                    {"$set": _without_document_contents(documents)},
+                ]
+            )
+            found = [doc async for doc in cursor]
+            data = found[0] if found else None
 
         if data is None:
             return None
@@ -102,6 +170,49 @@ class GraphDataRepository:
         # Extract _id before creating GraphDocument (GraphDocument doesn't have id field)
         graph_id = data["_id"]
         return (graph_id, GraphDocument(**data))
+
+    async def exists(self, user_id: str, graph_id: str) -> bool:
+        """Whether the user owns a case with this id, without loading it.
+
+        A case is one document with its attachments inside, so fetching it
+        just to see that it is there costs megabytes per call — and the job
+        endpoints and every stream connection ask exactly that.
+        """
+        found = await self.db["graph_data"].find_one(
+            {"_id": graph_id, "userId": user_id}, {"_id": 1}
+        )
+        return found is not None
+
+    async def get_questions_and_answers(
+        self, user_id: str, graph_id: str, *, answer_chars: int
+    ) -> list[tuple[str, str]] | None:
+        """Every question with the first answer_chars of its answer, in case order.
+
+        What naming a case needs, cut down in the database: the rest of the
+        document — the attached documents above all — never leaves it.
+        Returns None if the user has no such case.
+        """
+        data = await self.db["graph_data"].find_one(
+            {"_id": graph_id, "userId": user_id},
+            {
+                "nodeContents": {
+                    "$map": {
+                        "input": {"$ifNull": ["$nodeContents", []]},
+                        "as": "question",
+                        "in": {
+                            "query": "$$question.query",
+                            "response": {"$substrCP": ["$$question.response", 0, answer_chars]},
+                        },
+                    }
+                }
+            },
+        )
+        if data is None:
+            return None
+        return [
+            (item.get("query") or "", item.get("response") or "")
+            for item in data.get("nodeContents", [])
+        ]
 
     async def get_all_metadata(self, user_id: str) -> list[dict[str, Any]]:
         """Get metadata for all user graphs (lightweight listing). Returns sorted by createdAt descending."""
@@ -174,6 +285,7 @@ class GraphDataRepository:
                     "$set": {**data_dict, "name": name, "revision": expected_revision},
                 },
                 upsert=True,
+                projection={"_id": 1},
             )
             return expected_revision
 
@@ -184,6 +296,10 @@ class GraphDataRepository:
         updated = await self.db["graph_data"].find_one_and_update(
             {"_id": graph_id, "userId": user_id, "revision": revision_matches},
             {"$set": data_dict, "$inc": {"revision": 1}},
+            # Only the new revision is read back. Without the projection the
+            # whole case — every document — would come back to be decoded and
+            # thrown away on every autosave.
+            projection={"revision": 1},
             return_document=ReturnDocument.AFTER,
         )
         if updated is not None:

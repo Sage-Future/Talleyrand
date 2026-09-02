@@ -1,6 +1,10 @@
 import { FC, useState } from 'react';
+import { Link } from 'react-router';
 import { AuthService } from '../services/authService';
 import { BrandMark } from './BrandMark';
+
+const LEGAL_LINK =
+  'underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600';
 
 export const LoginPage: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +43,17 @@ export const LoginPage: FC = () => {
           </svg>
           {isLoading ? 'Signing in…' : 'Continue with Google'}
         </button>
+        <p className="mt-5 text-[12.5px] leading-relaxed text-stone-400">
+          By continuing you agree to the{' '}
+          <Link to="/terms" className={LEGAL_LINK}>
+            terms of service
+          </Link>{' '}
+          and the{' '}
+          <Link to="/privacy" className={LEGAL_LINK}>
+            privacy policy
+          </Link>
+          .
+        </p>
       </div>
       <p className="mt-6 text-[13px] text-stone-400">
         built by{' '}

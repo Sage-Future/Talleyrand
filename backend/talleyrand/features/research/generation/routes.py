@@ -46,7 +46,7 @@ KEEPALIVE_INTERVAL = 15
 
 
 async def _require_graph(repo: GraphDataRepository, user_id: str, graph_id: str) -> None:
-    if await repo.get_by_id(user_id, graph_id) is None:
+    if not await repo.exists(user_id, graph_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 
@@ -95,7 +95,7 @@ async def generate_cheat_sheet(
     thread has moved on. The answer flow starts the same job automatically.
     """
     await _require_graph(graph_repo, user.email, str(graph_id))
-    graph = await manager.load_effective_graph(user.email, str(graph_id))
+    graph = await manager.load_effective_graph(user.email, str(graph_id), documents="names_only")
     if graph is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not has_thread_to_summarize(graph, str(node_id)):
@@ -185,7 +185,7 @@ async def stream(websocket: WebSocket):
         return
 
     repo = GraphDataRepository(get_db())
-    if await repo.get_by_id(user.email, graph_id) is None:
+    if not await repo.exists(user.email, graph_id):
         await websocket.accept()
         await websocket.close(code=4004, reason="Not found")
         return
