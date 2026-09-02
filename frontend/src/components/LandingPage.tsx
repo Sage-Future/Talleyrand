@@ -7,6 +7,7 @@ import { BrandMark } from './BrandMark';
 import { DECLINE_REASONS } from './research/declineReasons';
 import { iconTooltip } from './ui/TooltipLayer';
 import { isAnalyticsConfigured, resetConsent } from '../services/analyticsConsent';
+import { REPO_URL } from '../config/constants';
 
 /**
  * Public landing page. It mirrors the research workspace's own look —
@@ -157,17 +158,21 @@ export const LandingPage: FC = () => {
           <GitHubIcon className="icon-optical h-4 w-4" />
           Source on GitHub
         </a>
-        {isAnalyticsConfigured() && (
-          // Withdrawing has to be as easy as accepting was, and a visitor who
-          // never signs in cannot reach the setting inside the app.
-          <button
-            type="button"
-            onClick={resetConsent}
-            className="mx-auto mt-3 block underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600"
-          >
-            Cookies
-          </button>
-        )}
+        <div className="mt-3 flex items-center justify-center gap-4">
+          <Link to="/privacy" className={FOOTER_LINK}>
+            Privacy
+          </Link>
+          <Link to="/terms" className={FOOTER_LINK}>
+            Terms
+          </Link>
+          {isAnalyticsConfigured() && (
+            // Withdrawing has to be as easy as accepting was, and a visitor who
+            // never signs in cannot reach the setting inside the app.
+            <button type="button" onClick={resetConsent} className={FOOTER_LINK}>
+              Cookies
+            </button>
+          )}
+        </div>
       </footer>
     </div>
   );
@@ -184,9 +189,8 @@ const DEMO_CASE_ROUTES = {
   freeWill: '/shared/demo-free-will',
 } as const;
 
-// The public repository, so a visitor can check the open-source claim, star it,
-// or self-host without going looking for it.
-const REPO_URL = 'https://github.com/Sage-Future/Talleyrand';
+const FOOTER_LINK =
+  'underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600';
 
 // The workspace's primary action: an ink pill that lifts on hover.
 const PILL_BTN =

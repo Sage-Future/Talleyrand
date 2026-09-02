@@ -1,4 +1,5 @@
 import { FC, useSyncExternalStore } from 'react';
+import { Link } from 'react-router';
 import {
   getConsent,
   isAnalyticsConfigured,
@@ -34,7 +35,14 @@ export const ConsentBanner: FC = () => {
         <p className="flex-1 font-serif text-[13px] leading-relaxed text-stone-600">
           We would like to use Google Analytics to count visits and see which parts of Talleyrand
           get used. It stores a cookie in your browser, and never receives your questions, answers,
-          or documents. You can change your mind at any time.
+          or documents. You can change your mind at any time. Details are in the{' '}
+          <Link
+            to="/privacy#analytics"
+            className="underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-900"
+          >
+            privacy policy
+          </Link>
+          .
         </p>
         <div className="flex flex-shrink-0 gap-2">
           <button type="button" onClick={() => setConsent('denied')} className={buttonClass}>
