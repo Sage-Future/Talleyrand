@@ -7,6 +7,35 @@
     <meta name="theme-color" content="#f4f2ec" />
     <meta name="description" content="Talleyrand — a tool for thinking through complex topics as a tree of questions" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!--
+      Link previews. Unfurlers (Slack, X, iMessage, Discord) don't run our
+      JavaScript, so they only ever see these static values — every shared
+      address previews as the product, not as the case behind it. Naming a
+      case in its own preview needs prerendering at the edge.
+
+      CanonicalLink and useDocumentTitle keep the canonical address and the tab
+      title in step with the route for clients that do run JavaScript.
+    -->
+    <link rel="canonical" href="https://talleyrand.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Talleyrand" />
+    <meta property="og:url" content="https://talleyrand.app/" />
+    <meta property="og:title" content="Talleyrand — Ask better questions" />
+    <meta
+      property="og:description"
+      content="Research means dozens of open questions, and it's easy to lose the thread. Talleyrand keeps them in one tree and always shows you the next question worth asking."
+    />
+    <meta property="og:image" content="https://talleyrand.app/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Talleyrand — ask better questions. A case open in the workspace, its questions nested as a tree."
+    />
+    <!-- Title, description and image fall back to the og: tags above. -->
+    <meta name="twitter:card" content="summary_large_image" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/

@@ -1,6 +1,7 @@
 import { FC, ReactNode, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { BrandMark } from '../BrandMark';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 /** The organisation behind talleyrand.app, as named on both legal pages. */
 export const OPERATOR = 'Sage Future Inc';
@@ -19,6 +20,8 @@ export const LegalLayout: FC<{ title: string; updated: string; children: ReactNo
   children,
 }) => {
   const { hash } = useLocation();
+
+  useDocumentTitle(title);
 
   // Client-side navigation keeps the previous page's scroll position, which
   // would open a policy reached from the landing footer at its very bottom.

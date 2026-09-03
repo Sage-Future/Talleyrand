@@ -1,5 +1,5 @@
 import { FC, useEffect, ReactNode } from 'react';
-import { createBrowserRouter, Navigate, Outlet, useNavigate } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { LoginPage } from '../components/LoginPage';
 import { AuthFailurePage } from '../components/AuthFailurePage';
 import { LatestGraphRedirect } from '../components/LatestGraphRedirect';
@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { UnauthorizedEvent } from '../events/UnauthorizedEvent';
 import { clearTokens } from '../services/tokenStorage';
 import { registerRouter } from './caseNavigation';
+import { SITE_URL } from '../config/constants';
 
 // Component to handle auth events
 const AuthEventHandler: FC = () => {
@@ -54,9 +55,33 @@ const ProtectedRoute: FC<{ children: ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+/**
+ * Points the canonical link at the address actually being viewed.
+ *
+ * index.html can only ship one canonical, and leaving every route claiming to
+ * be the home page would fold shared cases and the legal pages into it. The
+ * path alone is canonical: query strings here are round-trip state (?next_url
+ * after a sign-in bounce), never a different document.
+ */
+const CanonicalLink: FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) return;
+    // Keep the root as "/", and drop the trailing slash everywhere else so one
+    // page is never claimed under two addresses.
+    const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/';
+    link.href = `${SITE_URL}${path}`;
+  }, [pathname]);
+
+  return null;
+};
+
 const RootLayout: FC = () => (
   <AuthProvider>
     <AuthEventHandler />
+    <CanonicalLink />
     <Outlet />
     <TooltipLayer />
     <ConsentBanner />
