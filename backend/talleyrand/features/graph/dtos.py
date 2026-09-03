@@ -223,6 +223,16 @@ class SaveGraphDataNoIdDTO(GraphNoId):
     acked_job_ids: list[str] = []
 
 
+class ImportGraphDTO(GraphNoId):
+    """DTO for creating a case from an uploaded export file.
+
+    The file's own id and revision are deliberately absent: an import is a
+    create, and the server mints both.
+    """
+
+    name: str
+
+
 class SaveGraphDataDTO(SaveGraphDataNoIdDTO):
     """DTO for graph data."""
 

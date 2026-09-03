@@ -19,6 +19,9 @@ router.add_api_route("/{graph_id}", gr.delete, methods=["DELETE"])
 router.add_api_route("/{graph_id}/rename", gr.rename, methods=["PATCH"])
 router.add_api_route("/", gr.get_all_metadata, methods=["GET"])
 router.add_api_route("/", gr.create_new, methods=["POST"])
+# Creating a case from a file is its own endpoint, not a save of one: a save
+# never creates, so that a stale one can't put back a deleted case.
+router.add_api_route("/import", gr.import_case, methods=["POST"])
 
 # Auto-naming loads the whole case and makes an OpenAI call, so it gets a
 # per-account cap like every other LLM-backed endpoint; the app only fires it
