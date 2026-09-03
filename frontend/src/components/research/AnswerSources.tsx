@@ -1,5 +1,6 @@
-import { FC, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import type { WebSource } from '../../types';
+import { httpUrl } from '../../utils/webUrl';
 
 /** decodeURI rejects a path holding a bare '%', which plenty of real URLs do;
  * one of those must read a little worse, not take the answer down with it. */
@@ -16,12 +17,10 @@ function readablePath(pathname: string): string {
  * Claude found or the answer cited, so most rows are named by their domain
  * with the path as the quieter half.
  */
-function describe(source: WebSource): { primary: string; secondary: string } {
-  let url: URL;
-  try {
-    url = new URL(source.url);
-  } catch {
-    // Search results come from outside; an unparseable one is still shown.
+function describe(source: WebSource, url: URL | null): { primary: string; secondary: string } {
+  if (url === null) {
+    // Search results come from outside; one this list won't link to — an
+    // unparseable URL, or a scheme other than http(s) — is still shown.
     return { primary: source.title ?? source.url, secondary: '' };
   }
 
@@ -99,30 +98,43 @@ export const AnswerSources: FC<{ sources: WebSource[]; found: number }> = ({ sou
           </div>
           <ul className="mt-1 max-h-64 overflow-y-auto pr-1">
             {sources.map(source => {
-              const { primary, secondary } = describe(source);
+              const url = httpUrl(source.url);
+              const { primary, secondary } = describe(source, url);
+              const line = `flex items-center gap-1.5 py-[3px] font-serif text-[12.5px] ${
+                source.cited ? 'text-stone-600' : 'text-stone-400'
+              }`;
+              const row: ReactNode = (
+                <>
+                  <Dot cited={source.cited} />
+                  <span className="min-w-0 truncate group-hover:underline">{primary}</span>
+                  {secondary && (
+                    <span className="min-w-0 truncate text-[11.5px] text-stone-300">
+                      {secondary}
+                    </span>
+                  )}
+                  {source.pageAge && (
+                    <span className="ml-auto flex-shrink-0 pl-2 text-[11.5px] text-stone-300">
+                      {source.pageAge}
+                    </span>
+                  )}
+                </>
+              );
               return (
                 <li key={source.url}>
-                  <a
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`group flex items-center gap-1.5 py-[3px] font-serif text-[12.5px] ${
-                      source.cited ? 'text-stone-600' : 'text-stone-400'
-                    }`}
-                  >
-                    <Dot cited={source.cited} />
-                    <span className="min-w-0 truncate group-hover:underline">{primary}</span>
-                    {secondary && (
-                      <span className="min-w-0 truncate text-[11.5px] text-stone-300">
-                        {secondary}
-                      </span>
-                    )}
-                    {source.pageAge && (
-                      <span className="ml-auto flex-shrink-0 pl-2 text-[11.5px] text-stone-300">
-                        {source.pageAge}
-                      </span>
-                    )}
-                  </a>
+                  {url ? (
+                    <a
+                      href={url.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`group ${line}`}
+                    >
+                      {row}
+                    </a>
+                  ) : (
+                    // Nothing safe to point at, so the row is text: no anchor,
+                    // and without the 'group' class no hover state promising one.
+                    <span className={line}>{row}</span>
+                  )}
                 </li>
               );
             })}

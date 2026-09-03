@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Body, Path
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -96,6 +96,27 @@ class WebSourceDTO(BaseSchema):
     title: str | None = None
     page_age: str | None = None
     cited: bool = False
+
+    @field_validator("url")
+    @classmethod
+    def _reject_non_web_schemes(cls, url: str) -> str:
+        """
+        Keep anything but an ordinary web link out of storage.
+
+        Real sources are http(s) — they only ever come from a web search the
+        model ran. But a case is also importable from hand-written JSON and
+        shareable by link, so this field is an attacker-controlled string that
+        the reader's browser is later handed; the frontend refuses to build an
+        href from anything else (utils/webUrl.ts) and this keeps such a URL
+        from being stored in the first place.
+
+        Deliberately strict about the prefix rather than parsing: a URL
+        arriving with leading whitespace or control characters is a URL whose
+        scheme two parsers may disagree about, and no legitimate source has one.
+        """
+        if not url.lower().startswith(("http://", "https://")):
+            raise ValueError("a source URL must be http:// or https://")
+        return url
 
 
 class NodeContentDTO(BaseSchema):
