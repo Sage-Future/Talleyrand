@@ -11,8 +11,9 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import { SettingsModal } from '../SettingsModal';
 import { Sidebar } from '../Sidebar';
 import { createNewGraph } from '../../services/autosaveService';
-import { CASE_SAVE_CONFLICT_EVENT } from '../../services/autosaveSubscriptions';
+import { CASE_DELETED_EVENT, CASE_SAVE_CONFLICT_EVENT } from '../../services/autosaveSubscriptions';
 import { researchGenerationService } from '../../services/researchGenerationService';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useGraphStructureStore } from '../../stores/graphStructureStore';
 import { useResearchStore } from '../../stores/researchStore';
 import { useUIStateStore } from '../../stores/uiStateStore';
@@ -87,6 +88,19 @@ export const ResearchPage: FC = () => {
     return () => window.removeEventListener(CASE_SAVE_CONFLICT_EVENT, handleConflict);
   }, [graphId]);
 
+  // The open case was deleted from another window. Unlike a conflict there is
+  // nothing to reload, and what is on screen can never be saved again — so
+  // drop it and leave, rather than let the user keep editing an orphan.
+  useEffect(() => {
+    const handleDeleted = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== graphId) return;
+      useGraphStructureStore.getState().closeGraph();
+      navigate('/research', { replace: true });
+    };
+    window.addEventListener(CASE_DELETED_EVENT, handleDeleted);
+    return () => window.removeEventListener(CASE_DELETED_EVENT, handleDeleted);
+  }, [graphId, navigate]);
+
   useEffect(() => {
     // API-key gate: suggestions, kickstarts and reports all run on OpenAI,
     // so the app is unusable without that key specifically
@@ -139,6 +153,14 @@ export const ResearchPage: FC = () => {
   // reload, a link opened cold — and otherwise just catches up with the cursor.
   const caseLoaded = useResearchStore(s => s.caseId) === graphId;
   const caseRevision = useResearchStore(s => s.caseRevision);
+
+  // Name the tab after the open case — several cases in several tabs is the
+  // normal way to work, and "Talleyrand" on all of them tells you nothing.
+  // The store still holds the previous case until the new one lands, so wait
+  // for it rather than briefly titling this case with its predecessor's name.
+  const caseName = useGraphStructureStore(s => s.name);
+  useDocumentTitle(caseLoaded ? caseName || 'Untitled case' : null);
+
   useEffect(() => {
     if (!graphId || !caseLoaded) return;
     const research = useResearchStore.getState();

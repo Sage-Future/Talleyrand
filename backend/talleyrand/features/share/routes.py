@@ -124,6 +124,6 @@ async def copy_shared_graph(
         declined_questions=graph_data.declined_questions,
         # read_history stays empty: the new owner hasn't read anything yet
     )
-    await repo.save(user.email, new_graph_id, copy)
+    await repo.create(user.email, new_graph_id, copy)
 
     return CopyGraphResponseDTO(id=new_graph_id).model_dump(by_alias=True, mode="json")

@@ -16,6 +16,16 @@ export class SaveConflictError extends Error {
   }
 }
 
+/** The server refused the save because the case is not there: it was
+ * deleted, here or from another window. The local copy is an orphan — it can
+ * never be saved again, and re-creating it would undo a delete the privacy
+ * policy promises is immediate and final. */
+export class CaseDeletedError extends Error {
+  constructor() {
+    super('This case was deleted, so there is nothing left to save it to.');
+  }
+}
+
 export async function saveToBackend(
   graphData: GraphData,
   ackedJobIds: string[]
@@ -36,6 +46,9 @@ export async function saveToBackend(
     if (response.status === 409) {
       throw new SaveConflictError();
     }
+    if (response.status === 404) {
+      throw new CaseDeletedError();
+    }
     console.error('Failed to save to backend:', error);
     // A string detail is the server's user-facing explanation of why this
     // save can never succeed (e.g. 413: case too large, with what to remove);
@@ -52,21 +65,15 @@ export async function saveToBackend(
 
 /** Create a new case on the server from an imported case file.
  *
- * The file's own id and revision never enter the account: the contents are
- * saved under a freshly minted id, which the server inserts as a first save
- * at revision 0 — so an import can never collide with or overwrite an
- * existing case. Returns the new case id for the caller to navigate to. */
+ * An import is a create, not a save: the file's own id and revision never
+ * enter the account, and the server mints the id it is stored under. So an
+ * import can neither collide with an existing case nor land on the id of a
+ * deleted one. Returns the new case id for the caller to navigate to. */
 export async function importGraph(caseData: CaseFileData): Promise<string> {
-  const graphId = crypto.randomUUID();
-  const { data, error } = await client.PUT('/graph/{graph_id}', {
+  const { data, error } = await client.POST('/graph/import', {
     body: {
       name: caseData.name,
-      revision: 0,
       ...toGraphPayload(caseData),
-      ackedJobIds: [],
-    },
-    params: {
-      path: { graph_id: graphId },
     },
   });
 
@@ -115,11 +122,14 @@ export async function loadGraphById(graphId: string): Promise<GraphData> {
 }
 
 export async function deleteGraph(graphId: string): Promise<void> {
-  const { error } = await client.DELETE('/graph/{graph_id}', {
+  const { error, response } = await client.DELETE('/graph/{graph_id}', {
     params: { path: { graph_id: graphId } },
   });
 
-  if (error) {
+  // A case that is already gone is a delete that already happened — a retry
+  // after a dropped response has nothing left to do and must not report
+  // failure, which would leave the caller holding a case it has to close.
+  if (error && response.status !== 404) {
     console.error('Failed to delete graph from backend:', error);
     throw new Error('Failed to delete graph from backend');
   }

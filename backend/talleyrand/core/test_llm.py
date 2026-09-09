@@ -49,7 +49,7 @@ from talleyrand.core.llm import (
     _weave_anthropic_deltas,
 )
 
-MODEL_LABEL = "Claude Opus 5 max"
+MODEL_LABEL = "Claude Fable 5.1 max"
 
 
 def _text(text: str) -> RawContentBlockDeltaEvent:
@@ -122,7 +122,7 @@ def _fallback(to_model: str) -> BetaRawContentBlockStartEvent:
             type="fallback",
             to=BetaFallbackInfo(model=to_model),
             trigger=BetaFallbackRefusalTrigger(type="refusal"),
-            **{"from": BetaFallbackInfo(model="claude-opus-5")},
+            **{"from": BetaFallbackInfo(model="claude-fable-5-1")},
         ),
     )
 

@@ -21,9 +21,9 @@ async def seed_demo_cases(db: AsyncDatabase[Any]) -> None:
     repo = GraphDataRepository(db)
     cases = build_demo_cases()
     for graph_id, document in cases:
-        # force: the code is the source of truth for demo cases — overwrite
-        # regardless of the stored revision (nothing else ever saves them).
-        await repo.save(DEMO_USER_ID, graph_id, document, force=True)
+        # overwrite: the code is the source of truth for demo cases — write
+        # them whole regardless of the stored revision (nothing else saves them).
+        await repo.overwrite(DEMO_USER_ID, graph_id, document)
         await repo.set_shared(DEMO_USER_ID, graph_id, shared=True)
 
     # Retired demo cases (removed or renamed ids) disappear with their links

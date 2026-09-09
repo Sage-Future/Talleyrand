@@ -14,6 +14,11 @@ export const GRAPH_AUTO_NAMED_EVENT = 'graph-auto-named';
 // including re-attaching the generation stream — which this module can't do.
 export const CASE_SAVE_CONFLICT_EVENT = 'case-save-conflict';
 
+// Event emitted when a save is refused because the case no longer exists
+// (detail: the graph id). Deleting a case is final, so the page owning it
+// closes it instead of reloading — there is nothing to reload.
+export const CASE_DELETED_EVENT = 'case-deleted';
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_MS = 1500;
 
@@ -110,6 +115,13 @@ async function executeSave(): Promise<void> {
       // rejects it the same way, so it only re-raises this event.
       cancelPendingAutosave();
       window.dispatchEvent(new CustomEvent(CASE_SAVE_CONFLICT_EVENT, { detail: graphData.id }));
+    }
+    if (error instanceof autosaveService.CaseDeletedError) {
+      // Nothing to reconcile and nothing to retry: the case is gone and the
+      // server will never take this snapshot. Drop the pending debounce and
+      // let the page close the case out from under this orphaned state.
+      cancelPendingAutosave();
+      window.dispatchEvent(new CustomEvent(CASE_DELETED_EVENT, { detail: graphData.id }));
     }
     throw error;
   }

@@ -70,8 +70,11 @@ export interface paths {
          *
          *     The save is conditional on the payload's revision matching the stored
          *     case (409 otherwise), so a stale client can never overwrite work saved
-         *     from another tab or device. A conflict retires nothing: job records
-         *     outlive the rejected save and are re-delivered when the client reloads.
+         *     from another tab or device. A case that is gone answers 404 rather than
+         *     being recreated: a save carries a snapshot that can outlive its case, and
+         *     storing it would undo a delete. Neither rejection retires anything: job
+         *     records outlive the rejected save and are re-delivered when the client
+         *     reloads.
          */
         put: operations["save_graph__graph_id__put"];
         post?: never;
@@ -123,6 +126,30 @@ export interface paths {
          * @description Create a new empty graph for the current user.
          */
         post: operations["create_new_graph__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/graph/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Case
+         * @description Create a case from an uploaded export file.
+         *
+         *     An import creates; it never saves over a case. The id is minted here and
+         *     the file carries none, so an import can neither collide with a case in
+         *     the account nor put back one the user deleted.
+         */
+        post: operations["import_case_graph_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -666,6 +693,48 @@ export interface components {
              * Format: date-time
              */
             createdAt: string;
+        };
+        /**
+         * ImportGraphDTO
+         * @description DTO for creating a case from an uploaded export file.
+         *
+         *     The file's own id and revision are deliberately absent: an import is a
+         *     create, and the server mints both.
+         */
+        ImportGraphDTO: {
+            /** Nodes */
+            nodes: components["schemas"]["NodeDTO"][];
+            /** Edges */
+            edges: components["schemas"]["EdgeDTO"][];
+            /** Nodecontents */
+            nodeContents: components["schemas"]["NodeContentDTO"][];
+            /**
+             * Brief
+             * @default
+             */
+            brief: string;
+            /**
+             * Casedocuments
+             * @default []
+             */
+            caseDocuments: components["schemas"]["DocumentDTO"][];
+            /**
+             * Suggestions
+             * @default []
+             */
+            suggestions: components["schemas"]["ResearchSuggestionDTO"][];
+            /**
+             * Declinedquestions
+             * @default []
+             */
+            declinedQuestions: components["schemas"]["DeclinedQuestionDTO"][];
+            /**
+             * Readhistory
+             * @default []
+             */
+            readHistory: components["schemas"]["ReadEventDTO"][];
+            /** Name */
+            name: string;
         };
         /**
          * JobDTO
@@ -1382,6 +1451,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    import_case_graph_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportGraphDTO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

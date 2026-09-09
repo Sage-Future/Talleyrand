@@ -20,7 +20,7 @@ from talleyrand.features.graph.dtos import GraphNoId
 from talleyrand.features.research.context_builder import ancestors_of, build_question_tree
 from talleyrand.features.research.ref_tokens import outline_ref_tokens
 
-CHEAT_SHEET_MODEL = "gpt-5.6-sol"
+CHEAT_SHEET_MODEL = "gpt-6-astra"
 CHEAT_SHEET_REASONING_EFFORT = "medium"
 EMPTY_CHEAT_SHEET_ERROR = "The model returned an empty cheat sheet."
 

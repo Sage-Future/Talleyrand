@@ -1,12 +1,49 @@
-import type { GraphData } from '../types';
+import type { GraphData, NodeContent } from '../types';
+import { httpUrl } from './webUrl';
 
 /** A case file's contents — everything in a case except its identity (id,
  * revision), which never survives an export/import round trip. */
 export type CaseFileData = Omit<GraphData, 'id' | 'revision' | 'name'> & { name: string };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const hasStrings = (value: unknown, ...fields: string[]): value is Record<string, unknown> =>
+  isRecord(value) && fields.every(field => typeof value[field] === 'string');
+
+/** The fields the app dereferences on the way to the screen without checking
+ * them first. An import file is hand-writable, so what isn't caught here is
+ * caught much later, as a blank render or a crash inside a component. */
+const isNode = (value: unknown): boolean => hasStrings(value, 'id');
+const isEdge = (value: unknown): boolean => hasStrings(value, 'id', 'source', 'target');
+const isDocument = (value: unknown): boolean =>
+  hasStrings(value, 'id', 'name', 'type', 'content') &&
+  (value.type === 'txt' || value.type === 'pdf');
+
+const isNodeContent = (value: unknown): boolean => hasStrings(value, 'id', 'query', 'response');
+
+/** An answer's sources are the one part of an imported case that the reader's
+ * browser is later handed as a URL. Nothing legitimate reaches this list but
+ * pages a web search turned up, so a source that isn't a web address is either
+ * corrupt or an attempt to smuggle a `javascript:` link into a source list. */
+const sourcesAreWebAddresses = (content: NodeContent): boolean => {
+  const sources: unknown = content.sources;
+  if (sources === undefined) return true; // exports predating source tracking
+  return Array.isArray(sources) && sources.every(source => httpUrl(source?.url) !== null);
+};
+
+/** Present and an array, or absent: research-view fields that older exports
+ * simply lack, where an empty list is a truthful reading of the file. */
+const optionalList = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
+const checked = <T>(items: unknown[], ok: (item: unknown) => boolean, what: string): T[] => {
+  if (!items.every(ok)) throw new Error(`The file's ${what} are not in the expected shape.`);
+  return items as T[];
+};
+
 /** Parse an exported case file. Checks the structural shape the app relies on
- * and normalizes fields older exports may lack; per-field validation happens
- * server-side when the imported case is saved. */
+ * and normalizes fields older exports may lack; the rest of the per-field
+ * validation happens server-side when the imported case is saved. */
 export const parseCaseFile = (json: string): CaseFileData => {
   let parsed: unknown;
   try {
@@ -26,17 +63,22 @@ export const parseCaseFile = (json: string): CaseFileData => {
     throw new Error('The file is not a case export.');
   }
 
+  const nodeContents = checked<NodeContent>(file.nodeContents, isNodeContent, 'answers');
+  if (!nodeContents.every(sourcesAreWebAddresses)) {
+    throw new Error('The file lists a source whose link is not a web address.');
+  }
+
   return {
     // 'New case' opts an unnamed import into auto-naming
     name: typeof file.name === 'string' && file.name !== '' ? file.name : 'New case',
-    nodes: file.nodes,
-    edges: file.edges,
-    nodeContents: file.nodeContents,
-    brief: file.brief ?? '',
-    caseDocuments: file.caseDocuments ?? [],
-    suggestions: file.suggestions ?? [],
-    declinedQuestions: file.declinedQuestions ?? [],
-    readHistory: file.readHistory ?? [],
+    nodes: checked(file.nodes, isNode, 'questions'),
+    edges: checked(file.edges, isEdge, 'links between questions'),
+    nodeContents,
+    brief: typeof file.brief === 'string' ? file.brief : '',
+    caseDocuments: checked(optionalList(file.caseDocuments), isDocument, 'attached documents'),
+    suggestions: optionalList(file.suggestions),
+    declinedQuestions: optionalList(file.declinedQuestions),
+    readHistory: optionalList(file.readHistory),
   };
 };
 

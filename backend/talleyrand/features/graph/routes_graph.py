@@ -11,6 +11,7 @@ from pydantic_core import to_json
 from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dtos import (
     GraphMetadataDTO,
+    ImportGraphDTO,
     RenameGraphDTO,
     SaveGraphDataDTO,
     get_save_graph_data_dto,
@@ -20,6 +21,7 @@ from talleyrand.features.graph.models import (
     GraphConflictError,
     GraphDataRepository,
     GraphDocument,
+    GraphNotFoundError,
     GraphTooLargeError,
     get_graph_repo,
 )
@@ -34,6 +36,18 @@ from talleyrand.features.research.generation.records import (
     get_job_repo,
 )
 from talleyrand.models.user import User
+
+
+def _too_large_error(exc: GraphTooLargeError) -> HTTPException:
+    """413, saying how far over the limit the case is and what to do about it."""
+    return HTTPException(
+        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        detail=(
+            f"This case is too large to save ({exc.size_bytes / (1024 * 1024):.1f} MB; "
+            f"the limit is {MAX_GRAPH_BYTES // (1024 * 1024)} MB). "
+            "Remove or shrink attached documents."
+        ),
+    )
 
 
 async def save(
@@ -51,8 +65,11 @@ async def save(
 
     The save is conditional on the payload's revision matching the stored
     case (409 otherwise), so a stale client can never overwrite work saved
-    from another tab or device. A conflict retires nothing: job records
-    outlive the rejected save and are re-delivered when the client reloads.
+    from another tab or device. A case that is gone answers 404 rather than
+    being recreated: a save carries a snapshot that can outlive its case, and
+    storing it would undo a delete. Neither rejection retires anything: job
+    records outlive the rejected save and are re-delivered when the client
+    reloads.
     """
     graph_id = str(payload.id)
     records = await job_repo.get_for_graph(graph_id)
@@ -71,12 +88,13 @@ async def save(
     try:
         new_revision = await repo.save(user.email, graph_id, graph_data)
     except GraphTooLargeError as exc:
+        raise _too_large_error(exc) from exc
+    except GraphNotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=(
-                f"This case is too large to save ({exc.size_bytes / (1024 * 1024):.1f} MB; "
-                f"the limit is {MAX_GRAPH_BYTES // (1024 * 1024)} MB). "
-                "Remove or shrink attached documents."
+                "This case no longer exists — it was deleted, here or in another "
+                "tab. Nothing was saved."
             ),
         ) from exc
     except GraphConflictError as exc:
@@ -184,7 +202,29 @@ async def create_new(
         node_contents=[],
     )
 
-    await repo.save(user.email, graph_id, graph_data)
+    await repo.create(user.email, graph_id, graph_data)
+
+    return {"id": graph_id}
+
+
+async def import_case(
+    payload: ImportGraphDTO,
+    repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
+    user: Annotated[User, Depends(auth_app.require_auth)],
+):
+    """
+    Create a case from an uploaded export file.
+
+    An import creates; it never saves over a case. The id is minted here and
+    the file carries none, so an import can neither collide with a case in
+    the account nor put back one the user deleted.
+    """
+    graph_id = str(uuid4())
+    graph_data = GraphDocument(user_id=user.email, **payload.model_dump(mode="json"))
+    try:
+        await repo.create(user.email, graph_id, graph_data)
+    except GraphTooLargeError as exc:
+        raise _too_large_error(exc) from exc
 
     return {"id": graph_id}
 

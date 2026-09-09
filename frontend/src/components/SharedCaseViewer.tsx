@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { copySharedGraph, fetchSharedGraph, type SharedGraphData } from '../services/shareService';
 import { ancestorsOf, buildQuestionTree, type QuestionTree } from '../utils/questionTree';
 import { AnswerSources } from './research/AnswerSources';
@@ -378,6 +379,12 @@ export const SharedCaseViewer: FC = () => {
       hoverQuestion: setHoveredRefId,
     }),
     [contentById, selectQuestion]
+  );
+
+  // A shared address is made to be pasted into a chat and opened later, so the
+  // tab, the bookmark and the history entry should all say which case it is.
+  useDocumentTitle(
+    loadState === 'not_found' ? 'Case not found' : data ? data.name || 'Untitled case' : null
   );
 
   // Send the visitor through login and back to this shared case, so the

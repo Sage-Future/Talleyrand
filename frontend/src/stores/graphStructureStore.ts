@@ -54,6 +54,7 @@ interface GraphStructureStore {
   // Persistence operations
   getGraph: () => GraphData;
   loadGraph: (data: GraphData) => void;
+  closeGraph: () => void;
   loadGraphFromBackend: (graphId: string) => Promise<void>;
 }
 
@@ -259,6 +260,29 @@ export const useGraphStructureStore = create<GraphStructureStore>()(
         });
 
         // Cancel autosave triggers from intermediate state changes above
+        cancelPendingAutosave();
+      },
+
+      /** Drop the open case from the stores without saving it — for a case
+       * that no longer exists (deleted here or from another window). The
+       * pending autosave must be cancelled, never flushed: flushing would
+       * hand the server a case it has already deleted. */
+      closeGraph: () => {
+        cancelPendingAutosave();
+        get().clearGraph();
+        useNodeContentStore.getState().clearAllContent();
+        const research = useResearchStore.getState();
+        research.loadPersisted({
+          brief: '',
+          caseDocuments: [],
+          suggestions: [],
+          declinedQuestions: [],
+          readHistory: [],
+        });
+        // No case is open: question addresses are only meaningful against one.
+        research.setCaseId(null);
+        // The clears above are store writes like any other, each arming the
+        // debounce again; drop it once more now that the stores are empty.
         cancelPendingAutosave();
       },
 

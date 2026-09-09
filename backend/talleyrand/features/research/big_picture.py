@@ -18,7 +18,7 @@ from talleyrand.features.research.context_builder import (
 from talleyrand.features.research.dtos import BigPictureQuestionDTO
 
 MAX_SUGGESTIONS = 5
-SUGGESTER_MODEL = "gpt-5.6-sol"
+SUGGESTER_MODEL = "gpt-6-astra"
 SUGGESTER_REASONING_EFFORT = "medium"
 
 Persona = Literal[

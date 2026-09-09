@@ -14,8 +14,10 @@ def get_encoding_for_model(model: SupportedModel) -> tiktoken.Encoding:
     """
     Get the tiktoken encoding for a given model.
 
-    For GPT-5 series models (which are using GPT-4's architecture),
-    we use the o200k_base encoding.
+    tiktoken ships no entry for the GPT-5.6 or GPT-6 families, so every
+    OpenAI model is counted with o200k_base, the newest encoding it has. The
+    count only decides how much of an oversized prompt to trim, so a close
+    approximation is enough.
 
     Args:
         model: The model identifier
@@ -23,8 +25,8 @@ def get_encoding_for_model(model: SupportedModel) -> tiktoken.Encoding:
     Returns:
         tiktoken.Encoding instance for the model
     """
-    # All current GPT-5 models use o200k_base encoding
-    # This is the same encoding used by GPT-4 and later models
+    # o200k_base is the encoding tiktoken knows for GPT-4o and GPT-5; the
+    # GPT-5.6 and GPT-6 Astra models have no entry of their own.
     return tiktoken.get_encoding("o200k_base")
 
 
