@@ -75,7 +75,7 @@ ANTHROPIC_MARKDOWN_LINK_INSTRUCTION = (
     "This does not apply to the [[1.2]] cross-link tokens, which must stay exactly as written."
 )
 
-# Claude Opus 5's safety classifiers can decline a request outright, which would
+# Claude Fable 5.1's safety classifiers can decline a request outright, which would
 # otherwise reach the reader as a blank answer. Anthropic can re-run the refused
 # request on a stand-in model inside the same call; enabled per model via
 # ModelConfig.refusal_fallback and announced in the answer so the reader always

@@ -13,7 +13,7 @@ from talleyrand.core import llm as llm_module
 from talleyrand.core.llm import TRIM_STEP_CHARS, TRIMMED_NOTICE, fit_to_context
 from talleyrand.core.model_settings import get_model_config
 
-MODEL = get_model_config("claude-opus-5-max")
+MODEL = get_model_config("claude-fable-5-1-max")
 # The stub below counts four characters to the token, so a window in tokens is
 # four times as many characters of prompt.
 CHARS_PER_TOKEN = 4

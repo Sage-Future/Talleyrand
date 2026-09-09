@@ -4,14 +4,14 @@ from typing import Literal, cast
 type SupportedModel = Literal[
     "gpt-5.6-luna",
     "gpt-5.6-terra",
-    "gpt-5.6-sol-medium",
-    "gpt-5.6-sol-high",
-    "gpt-5.6-sol-max",
+    "gpt-6-astra-medium",
+    "gpt-6-astra-high",
+    "gpt-6-astra-max",
     "claude-haiku-4-5",
     "claude-sonnet-5",
-    "claude-opus-5-medium",
-    "claude-opus-5-high",
-    "claude-opus-5-max",
+    "claude-fable-5-1-medium",
+    "claude-fable-5-1-high",
+    "claude-fable-5-1-max",
 ]
 
 type Provider = Literal["openai", "anthropic"]
@@ -19,6 +19,7 @@ type Provider = Literal["openai", "anthropic"]
 # "none" is an explicit GPT-5.6 effort level meaning "do not reason at all" —
 # distinct from reasoning_effort=None, which means "send no effort parameter"
 # (the right thing for Claude Haiku, which rejects the parameter outright).
+# GPT-6 Astra does not accept "none": its ladder starts at "low".
 type ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh", "max"]
 
 
@@ -73,31 +74,31 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         context_tokens=1050000,
         reasoning_effort="medium",
     ),
-    "gpt-5.6-sol-medium": ModelConfig(
-        id="gpt-5.6-sol-medium",
+    "gpt-6-astra-medium": ModelConfig(
+        id="gpt-6-astra-medium",
         provider="openai",
-        api_model="gpt-5.6-sol",
-        label="GPT-5.6 Sol medium",
+        api_model="gpt-6-astra",
+        label="GPT-6 Astra medium",
         description="Most capable",
         order=3,
         context_tokens=1050000,
         reasoning_effort="medium",
     ),
-    "gpt-5.6-sol-high": ModelConfig(
-        id="gpt-5.6-sol-high",
+    "gpt-6-astra-high": ModelConfig(
+        id="gpt-6-astra-high",
         provider="openai",
-        api_model="gpt-5.6-sol",
-        label="GPT-5.6 Sol high",
+        api_model="gpt-6-astra",
+        label="GPT-6 Astra high",
         description="High-quality reasoning",
         order=4,
         context_tokens=1050000,
         reasoning_effort="high",
     ),
-    "gpt-5.6-sol-max": ModelConfig(
-        id="gpt-5.6-sol-max",
+    "gpt-6-astra-max": ModelConfig(
+        id="gpt-6-astra-max",
         provider="openai",
-        api_model="gpt-5.6-sol",
-        label="GPT-5.6 Sol max",
+        api_model="gpt-6-astra",
+        label="GPT-6 Astra max",
         description="Deepest reasoning (max)",
         order=5,
         context_tokens=1050000,
@@ -123,33 +124,33 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         context_tokens=1000000,
         reasoning_effort="medium",
     ),
-    "claude-opus-5-medium": ModelConfig(
-        id="claude-opus-5-medium",
+    "claude-fable-5-1-medium": ModelConfig(
+        id="claude-fable-5-1-medium",
         provider="anthropic",
-        api_model="claude-opus-5",
-        label="Claude Opus 5 medium",
+        api_model="claude-fable-5-1",
+        label="Claude Fable 5.1 medium",
         description="Most capable Claude",
         order=8,
         context_tokens=1000000,
         reasoning_effort="medium",
         refusal_fallback=True,
     ),
-    "claude-opus-5-high": ModelConfig(
-        id="claude-opus-5-high",
+    "claude-fable-5-1-high": ModelConfig(
+        id="claude-fable-5-1-high",
         provider="anthropic",
-        api_model="claude-opus-5",
-        label="Claude Opus 5 high",
+        api_model="claude-fable-5-1",
+        label="Claude Fable 5.1 high",
         description="High-quality reasoning",
         order=9,
         context_tokens=1000000,
         reasoning_effort="high",
         refusal_fallback=True,
     ),
-    "claude-opus-5-max": ModelConfig(
-        id="claude-opus-5-max",
+    "claude-fable-5-1-max": ModelConfig(
+        id="claude-fable-5-1-max",
         provider="anthropic",
-        api_model="claude-opus-5",
-        label="Claude Opus 5 max",
+        api_model="claude-fable-5-1",
+        label="Claude Fable 5.1 max",
         description="Deepest reasoning (max)",
         order=10,
         context_tokens=1000000,
@@ -169,18 +170,30 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
 # When retiring a model: delete its entry from MODEL_CONFIGS and add one line
 # here pointing at whatever replaces it. Entries are never removed — an id that
 # is neither current nor listed here is a genuine bug, not something to guess at.
+# The map is one hop deep: when a replacement is itself retired, every entry
+# that pointed at it is re-pointed at the new replacement.
 RETIRED_MODELS: dict[str, SupportedModel] = {
-    # Retired 2026-08-18, replaced by the GPT-5.6 family
+    # Retired 2026-08-18 for the GPT-5.6 family, whose Sol tier has since
+    # given way to GPT-6 Astra
     "gpt-5.4-nano-2026-03-17": "gpt-5.6-luna",
     "gpt-5.4-mini-2026-03-17": "gpt-5.6-terra",
-    "gpt-5.5-medium": "gpt-5.6-sol-medium",
-    "gpt-5.5-high": "gpt-5.6-sol-high",
-    "gpt-5.5-xhigh": "gpt-5.6-sol-max",
-    # Retired 2026-08-18, replaced by Claude 5
+    "gpt-5.5-medium": "gpt-6-astra-medium",
+    "gpt-5.5-high": "gpt-6-astra-high",
+    "gpt-5.5-xhigh": "gpt-6-astra-max",
+    # Retired 2026-08-18 for Claude 5, whose Opus tier has since given way to
+    # Claude Fable 5.1
     "claude-sonnet-4-6": "claude-sonnet-5",
-    "claude-opus-4-8-medium": "claude-opus-5-medium",
-    "claude-opus-4-8-high": "claude-opus-5-high",
-    "claude-opus-4-8-xhigh": "claude-opus-5-max",
+    "claude-opus-4-8-medium": "claude-fable-5-1-medium",
+    "claude-opus-4-8-high": "claude-fable-5-1-high",
+    "claude-opus-4-8-xhigh": "claude-fable-5-1-max",
+    # Retired 2026-09-09, replaced by GPT-6 Astra
+    "gpt-5.6-sol-medium": "gpt-6-astra-medium",
+    "gpt-5.6-sol-high": "gpt-6-astra-high",
+    "gpt-5.6-sol-max": "gpt-6-astra-max",
+    # Retired 2026-09-09, replaced by Claude Fable 5.1
+    "claude-opus-5-medium": "claude-fable-5-1-medium",
+    "claude-opus-5-high": "claude-fable-5-1-high",
+    "claude-opus-5-max": "claude-fable-5-1-max",
 }
 
 

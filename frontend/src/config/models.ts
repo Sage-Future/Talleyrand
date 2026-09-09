@@ -26,23 +26,23 @@ export const MODELS = [
     contextTokens: 1050000,
   },
   {
-    id: 'gpt-5.6-sol-medium',
+    id: 'gpt-6-astra-medium',
     provider: 'openai',
-    label: 'GPT-5.6 Sol medium',
+    label: 'GPT-6 Astra medium',
     description: 'Most capable',
     contextTokens: 1050000,
   },
   {
-    id: 'gpt-5.6-sol-high',
+    id: 'gpt-6-astra-high',
     provider: 'openai',
-    label: 'GPT-5.6 Sol high',
+    label: 'GPT-6 Astra high',
     description: 'High-quality reasoning',
     contextTokens: 1050000,
   },
   {
-    id: 'gpt-5.6-sol-max',
+    id: 'gpt-6-astra-max',
     provider: 'openai',
-    label: 'GPT-5.6 Sol max',
+    label: 'GPT-6 Astra max',
     description: 'Deepest reasoning (max)',
     contextTokens: 1050000,
   },
@@ -61,23 +61,23 @@ export const MODELS = [
     contextTokens: 1000000,
   },
   {
-    id: 'claude-opus-5-medium',
+    id: 'claude-fable-5-1-medium',
     provider: 'anthropic',
-    label: 'Claude Opus 5 medium',
+    label: 'Claude Fable 5.1 medium',
     description: 'Most capable Claude',
     contextTokens: 1000000,
   },
   {
-    id: 'claude-opus-5-high',
+    id: 'claude-fable-5-1-high',
     provider: 'anthropic',
-    label: 'Claude Opus 5 high',
+    label: 'Claude Fable 5.1 high',
     description: 'High-quality reasoning',
     contextTokens: 1000000,
   },
   {
-    id: 'claude-opus-5-max',
+    id: 'claude-fable-5-1-max',
     provider: 'anthropic',
-    label: 'Claude Opus 5 max',
+    label: 'Claude Fable 5.1 max',
     description: 'Deepest reasoning (max)',
     contextTokens: 1000000,
   },
@@ -91,7 +91,7 @@ export const MODELS = [
 
 export type ModelType = (typeof MODELS)[number]['id'];
 
-export const DEFAULT_MODEL: ModelType = 'gpt-5.6-sol-medium';
+export const DEFAULT_MODEL: ModelType = 'gpt-6-astra-medium';
 
 // Presets we have removed, each pointing at its closest current replacement.
 // Mirrors RETIRED_MODELS in the backend's model_settings.py, plus the label the
@@ -99,21 +99,33 @@ export const DEFAULT_MODEL: ModelType = 'gpt-5.6-sol-medium';
 // that actually wrote it instead of a raw id.
 //
 // When retiring a model: delete it from MODELS above and add one line here.
+// The map is one hop deep: when a replacement is itself retired, every entry
+// that pointed at it is re-pointed at the new replacement.
 export const RETIRED_MODELS: Record<string, { label: string; replacedBy: ModelType }> = {
-  // Retired 2026-08-18, replaced by the GPT-5.6 family
+  // Retired 2026-08-18 for the GPT-5.6 family, whose Sol tier has since given
+  // way to GPT-6 Astra
   'gpt-5.4-nano-2026-03-17': { label: 'GPT-5.4 Nano', replacedBy: 'gpt-5.6-luna' },
   'gpt-5.4-mini-2026-03-17': { label: 'GPT-5.4 Mini', replacedBy: 'gpt-5.6-terra' },
-  'gpt-5.5-medium': { label: 'GPT-5.5 medium', replacedBy: 'gpt-5.6-sol-medium' },
-  'gpt-5.5-high': { label: 'GPT-5.5 high', replacedBy: 'gpt-5.6-sol-high' },
-  'gpt-5.5-xhigh': { label: 'GPT-5.5 xhigh', replacedBy: 'gpt-5.6-sol-max' },
-  // Retired 2026-08-18, replaced by Claude 5
+  'gpt-5.5-medium': { label: 'GPT-5.5 medium', replacedBy: 'gpt-6-astra-medium' },
+  'gpt-5.5-high': { label: 'GPT-5.5 high', replacedBy: 'gpt-6-astra-high' },
+  'gpt-5.5-xhigh': { label: 'GPT-5.5 xhigh', replacedBy: 'gpt-6-astra-max' },
+  // Retired 2026-08-18 for Claude 5, whose Opus tier has since given way to
+  // Claude Fable 5.1
   'claude-sonnet-4-6': { label: 'Claude Sonnet 4.6', replacedBy: 'claude-sonnet-5' },
   'claude-opus-4-8-medium': {
     label: 'Claude Opus 4.8 medium',
-    replacedBy: 'claude-opus-5-medium',
+    replacedBy: 'claude-fable-5-1-medium',
   },
-  'claude-opus-4-8-high': { label: 'Claude Opus 4.8 high', replacedBy: 'claude-opus-5-high' },
-  'claude-opus-4-8-xhigh': { label: 'Claude Opus 4.8 xhigh', replacedBy: 'claude-opus-5-max' },
+  'claude-opus-4-8-high': { label: 'Claude Opus 4.8 high', replacedBy: 'claude-fable-5-1-high' },
+  'claude-opus-4-8-xhigh': { label: 'Claude Opus 4.8 xhigh', replacedBy: 'claude-fable-5-1-max' },
+  // Retired 2026-09-09, replaced by GPT-6 Astra
+  'gpt-5.6-sol-medium': { label: 'GPT-5.6 Sol medium', replacedBy: 'gpt-6-astra-medium' },
+  'gpt-5.6-sol-high': { label: 'GPT-5.6 Sol high', replacedBy: 'gpt-6-astra-high' },
+  'gpt-5.6-sol-max': { label: 'GPT-5.6 Sol max', replacedBy: 'gpt-6-astra-max' },
+  // Retired 2026-09-09, replaced by Claude Fable 5.1
+  'claude-opus-5-medium': { label: 'Claude Opus 5 medium', replacedBy: 'claude-fable-5-1-medium' },
+  'claude-opus-5-high': { label: 'Claude Opus 5 high', replacedBy: 'claude-fable-5-1-high' },
+  'claude-opus-5-max': { label: 'Claude Opus 5 max', replacedBy: 'claude-fable-5-1-max' },
 };
 
 /** Current preset for a stored id, translating retired ids to their replacements. */

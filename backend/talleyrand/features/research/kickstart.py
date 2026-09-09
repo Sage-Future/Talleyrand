@@ -26,7 +26,7 @@ from talleyrand.features.research.dtos import (
     KickstartQuestionsResponseDTO,
 )
 
-KICKSTART_MODEL = "gpt-5.6-sol"
+KICKSTART_MODEL = "gpt-6-astra"
 KICKSTART_REASONING_EFFORT = "low"
 # Caps only the model's own proposals; the user's own questions extracted from
 # the notes are always returned in full, however many there are.
