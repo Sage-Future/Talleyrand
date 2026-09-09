@@ -2,12 +2,15 @@ import { FC, useState } from 'react';
 import { Link } from 'react-router';
 import { AuthService } from '../services/authService';
 import { BrandMark } from './BrandMark';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const LEGAL_LINK =
   'underline decoration-stone-300 underline-offset-2 transition-colors hover:text-stone-600';
 
 export const LoginPage: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+
+  useDocumentTitle('Sign in');
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);

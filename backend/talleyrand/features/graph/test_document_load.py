@@ -30,7 +30,7 @@ STORED = {
             "id": "9a1f35a4-9c02-4b6e-9a1c-2e2f2a1b3c4d",
             "query": "Does it hold?",
             "response": "It holds, narrowly.",
-            "selectedModel": "gpt-5.6-sol-medium",
+            "selectedModel": "gpt-6-astra-medium",
             "documents": [{"id": "d2", "name": "scan", "type": "pdf", "content": ""}],
             "selectionSuggestions": [],
             "selections": [],

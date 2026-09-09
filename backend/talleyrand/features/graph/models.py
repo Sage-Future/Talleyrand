@@ -103,6 +103,16 @@ class GraphConflictError(Exception):
     """
 
 
+class GraphNotFoundError(Exception):
+    """The case a save targets is not in the database: it was deleted.
+
+    A client's snapshot easily outlives the case it came from — a debounced
+    autosave that fires after the delete, a second tab, a laptop waking up —
+    and storing it would undo the delete, so the save is refused instead and
+    the caller answers 404. create() is the only write that makes a case.
+    """
+
+
 class GraphDocument(BaseModel):
     """Domain model for Graph data stored in MongoDB."""
 
@@ -130,6 +140,28 @@ class GraphDocument(BaseModel):
     suggestions: list[ResearchSuggestionDTO] = []
     declined_questions: list[DeclinedQuestionDTO] = []
     read_history: list[ReadEventDTO] = []
+
+
+def _storable_fields(graph_data: GraphDocument) -> tuple[dict[str, Any], str, int]:
+    """The document body a whole-case write stores, plus its name and revision.
+
+    Strips what such a write must never carry: userId and createdAt belong to
+    the case's creation, and shared is the share endpoints' to set. The name
+    is owned by the rename endpoint (auto-naming uses it too), so a
+    whole-case save can't revert a rename that landed after its snapshot — it
+    is applied only where the case is created. The size guard runs here,
+    before any database access.
+    """
+
+    data_dict = graph_data.model_dump(mode="json", by_alias=True)
+    data_dict.pop("userId", None)  # Don't update userId (set on creation only)
+    data_dict.pop("createdAt", None)  # Don't update createdAt (set on creation only)
+    data_dict.pop("shared", None)  # Don't update shared (managed by share endpoints only)
+    name = data_dict.pop("name")
+    revision = data_dict.pop("revision")
+
+    ensure_graph_fits(data_dict)
+    return data_dict, name, revision
 
 
 class GraphDataRepository:
@@ -244,50 +276,55 @@ class GraphDataRepository:
         result = [doc async for doc in cursor]
         return result
 
-    async def save(
-        self, user_id: str, graph_id: str, graph_data: GraphDocument, *, force: bool = False
-    ) -> int:
+    async def create(self, user_id: str, graph_id: str, graph_data: GraphDocument) -> None:
+        """Insert a new case at revision 0. The only write that makes one.
+
+        Saves never create (see save), so every case enters the database here:
+        a new empty case, a copy of a shared one, an imported file. The
+        caller's revision is ignored — a new case starts at 0 — and userId,
+        createdAt and shared are set here rather than taken from the payload,
+        so an imported file can't claim another owner or arrive public.
+
+        Raises GraphConflictError if the id is already taken (two creates
+        raced), and GraphTooLargeError like save().
+        """
+
+        data_dict, name, _ = _storable_fields(graph_data)
+        try:
+            await self.db["graph_data"].insert_one(
+                {
+                    **data_dict,
+                    "_id": graph_id,
+                    "userId": user_id,
+                    "name": name,
+                    "createdAt": datetime.now(UTC),
+                    "shared": False,
+                    "revision": 0,
+                }
+            )
+        except DuplicateKeyError as exc:
+            raise GraphConflictError() from exc
+
+    async def save(self, user_id: str, graph_id: str, graph_data: GraphDocument) -> int:
         """Save the working graph for a user; returns the stored revision.
 
         The write is conditional on graph_data.revision matching the stored
-        document (a new graph is inserted at revision 0). On mismatch it
-        raises GraphConflictError instead of overwriting, so two clients
-        holding the same case can never silently destroy each other's work.
-        force=True (demo seeding, where the code is the source of truth)
-        overwrites unconditionally, name and revision included.
+        document. On mismatch it raises GraphConflictError instead of
+        overwriting, so two clients holding the same case can never silently
+        destroy each other's work.
+
+        A save never creates a case. A client saves a snapshot taken up to a
+        debounce ago, and that snapshot can outlive the case itself: writing
+        it as a new document would silently undo a delete, which the privacy
+        policy promises is immediate and final. A save matching no document
+        of this user's therefore raises GraphNotFoundError; create() is the
+        only path that inserts one.
 
         Raises GraphTooLargeError instead of letting MongoDB reject an
         oversized document, so callers can answer with a clear 413.
         """
 
-        # Serialize with camelCase field names using alias generator
-        data_dict = graph_data.model_dump(mode="json", by_alias=True)
-        data_dict.pop("userId", None)  # Don't update userId (set on creation only)
-        data_dict.pop("createdAt", None)  # Don't update createdAt (set on creation only)
-        data_dict.pop("shared", None)  # Don't update shared (managed by share endpoints only)
-        # The name is owned by the rename endpoint (auto-naming uses it too), so a
-        # whole-case save can't revert a rename that landed after its snapshot;
-        # the payload's name is applied only when the case is first created.
-        name = data_dict.pop("name")
-        expected_revision = data_dict.pop("revision")
-
-        ensure_graph_fits(data_dict)
-
-        if force:
-            await self.db["graph_data"].find_one_and_update(
-                {"_id": graph_id, "userId": user_id},
-                {
-                    "$setOnInsert": {
-                        "_id": graph_id,
-                        "userId": user_id,
-                        "createdAt": datetime.now(UTC),
-                    },
-                    "$set": {**data_dict, "name": name, "revision": expected_revision},
-                },
-                upsert=True,
-                projection={"_id": 1},
-            )
-            return expected_revision
+        data_dict, _, expected_revision = _storable_fields(graph_data)
 
         # None in the $in also matches documents created before the revision
         # field existed; their first save migrates them ($inc treats a missing
@@ -305,31 +342,38 @@ class GraphDataRepository:
         if updated is not None:
             return int(updated["revision"])
 
-        # No match: either the case doesn't exist yet (create it) or a
-        # concurrent writer moved the revision on (conflict). Scoped to the
-        # user like every other query here — an id owned by someone else must
-        # not read as "your case moved on" (it falls through to the insert,
-        # whose duplicate-key failure covers it).
+        # No match: either a concurrent writer moved the revision on, or the
+        # case is gone. Scoped to the user like every other query here — an id
+        # owned by someone else must read as gone, not as "your case moved on".
         existing = await self.db["graph_data"].find_one(
             {"_id": graph_id, "userId": user_id}, {"_id": 1}
         )
-        if existing is not None:
-            raise GraphConflictError()
-        try:
-            await self.db["graph_data"].insert_one(
-                {
-                    **data_dict,
+        if existing is None:
+            raise GraphNotFoundError()
+        raise GraphConflictError()
+
+    async def overwrite(self, user_id: str, graph_id: str, graph_data: GraphDocument) -> None:
+        """Write a case whole — name and revision included — creating it if absent.
+
+        For demo seeding only, where the code is the source of truth and
+        nothing else ever writes these cases. Every other write goes through
+        create() or save() and respects the stored revision.
+        """
+
+        data_dict, name, revision = _storable_fields(graph_data)
+        await self.db["graph_data"].find_one_and_update(
+            {"_id": graph_id, "userId": user_id},
+            {
+                "$setOnInsert": {
                     "_id": graph_id,
                     "userId": user_id,
-                    "name": name,
                     "createdAt": datetime.now(UTC),
-                    "revision": 0,
-                }
-            )
-        except DuplicateKeyError as exc:
-            # Two first-saves raced; exactly one insert wins.
-            raise GraphConflictError() from exc
-        return 0
+                },
+                "$set": {**data_dict, "name": name, "revision": revision},
+            },
+            upsert=True,
+            projection={"_id": 1},
+        )
 
     async def delete(self, user_id: str, graph_id: str) -> bool:
         """Delete a graph by ID for a specific user."""

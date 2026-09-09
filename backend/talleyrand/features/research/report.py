@@ -26,7 +26,7 @@ from talleyrand.features.research.context_builder import (
 from talleyrand.features.research.dtos import ReportRequestDTO, ReportResponseDTO
 from talleyrand.features.research.ref_tokens import outline_ref_tokens
 
-REPORT_MODEL = "gpt-5.6-sol"
+REPORT_MODEL = "gpt-6-astra"
 REPORT_REASONING_EFFORT = "xhigh"
 
 INSTRUCTIONS = (

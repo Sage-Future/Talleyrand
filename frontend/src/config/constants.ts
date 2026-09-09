@@ -4,6 +4,12 @@ const isSecure = import.meta.env.VITE_IS_SECURE === 'true';
 // Backend URL without protocol (e.g., "localhost:8000" or "api.example.com")
 const backendHost = import.meta.env.VITE_BACKEND_URL || 'localhost:8000';
 
+// Where the hosted service lives. Canonical addresses and link-preview images
+// must be absolute, and are built from this rather than from the origin the
+// page happens to be served on — so a preview deployment advertises the real
+// site instead of naming itself.
+export const SITE_URL = 'https://talleyrand.app';
+
 // The public repository, so a visitor can check the open-source claim, star it,
 // or self-host without going looking for it.
 export const REPO_URL = 'https://github.com/Sage-Future/Talleyrand';

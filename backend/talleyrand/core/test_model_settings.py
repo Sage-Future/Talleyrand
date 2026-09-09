@@ -16,6 +16,8 @@ from talleyrand.core.model_settings import (
     resolve_model_id,
 )
 
+FABLE_5_1_IDS = {"claude-fable-5-1-medium", "claude-fable-5-1-high", "claude-fable-5-1-max"}
+
 
 def test_every_retired_model_points_at_a_current_one():
     for retired_id, replacement in RETIRED_MODELS.items():
@@ -34,8 +36,15 @@ def test_current_ids_resolve_to_themselves():
 
 
 def test_retired_ids_resolve_to_their_replacement():
-    assert resolve_model_id("gpt-5.5-medium") == "gpt-5.6-sol-medium"
-    assert resolve_model_id("claude-opus-4-8-xhigh") == "claude-opus-5-max"
+    assert resolve_model_id("gpt-5.6-sol-medium") == "gpt-6-astra-medium"
+    assert resolve_model_id("claude-opus-5-max") == "claude-fable-5-1-max"
+
+
+def test_a_retired_replacement_is_skipped_over_not_chained():
+    # Resolution is a single lookup, so an id retired in an earlier bump must
+    # point straight at today's model, not at the model that replaced it then.
+    assert resolve_model_id("gpt-5.5-medium") == "gpt-6-astra-medium"
+    assert resolve_model_id("claude-opus-4-8-xhigh") == "claude-fable-5-1-max"
 
 
 def test_a_case_answered_by_a_retired_model_still_runs():
@@ -57,6 +66,11 @@ def test_reasoning_effort_none_is_explicit_not_absent():
     assert MODEL_CONFIGS["claude-haiku-4-5"].reasoning_effort is None
 
 
-def test_only_opus_5_opts_into_the_refusal_fallback():
+def test_only_fable_5_1_opts_into_the_refusal_fallback():
     fallback_ids = {m.id for m in MODEL_CONFIGS.values() if m.refusal_fallback}
-    assert fallback_ids == {"claude-opus-5-medium", "claude-opus-5-high", "claude-opus-5-max"}
+    assert fallback_ids == FABLE_5_1_IDS
+
+
+def test_only_fable_5_1_is_asked_for_plain_prose():
+    plain_prose_ids = {m.id for m in MODEL_CONFIGS.values() if m.plain_prose}
+    assert plain_prose_ids == FABLE_5_1_IDS

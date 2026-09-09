@@ -119,38 +119,37 @@ async def test_stale_revision_on_existing_case_is_a_conflict():
 
 
 @pytest.mark.asyncio
-async def test_new_case_is_inserted_at_revision_zero_with_its_name():
-    collection = _FakeCollection(update_result=None, existing_doc=None)
+async def test_create_inserts_at_revision_zero_with_its_name():
+    collection = _FakeCollection()
     repo = GraphDataRepository(db=_FakeDB(collection))
 
-    returned = await repo.save("user@example.com", "graph-1", _graph())
+    await repo.create("user@example.com", "graph-1", _graph(revision=9))
 
-    assert returned == 0
     assert collection.inserted is not None
+    # A created case starts at 0 whatever the payload claims — an imported
+    # file carries the revision it had in the account it was exported from.
     assert collection.inserted["revision"] == 0
     assert collection.inserted["name"] == "A case"
     assert collection.inserted["userId"] == "user@example.com"
+    # A copy of a shared case must not arrive public.
+    assert collection.inserted["shared"] is False
 
 
 @pytest.mark.asyncio
-async def test_racing_first_saves_yield_a_conflict_not_a_crash():
-    collection = _FakeCollection(
-        update_result=None,
-        existing_doc=None,
-        insert_raises=DuplicateKeyError("duplicate _id"),
-    )
+async def test_racing_creates_yield_a_conflict_not_a_crash():
+    collection = _FakeCollection(insert_raises=DuplicateKeyError("duplicate _id"))
     repo = GraphDataRepository(db=_FakeDB(collection))
 
     with pytest.raises(GraphConflictError):
-        await repo.save("user@example.com", "graph-1", _graph())
+        await repo.create("user@example.com", "graph-1", _graph())
 
 
 @pytest.mark.asyncio
-async def test_force_save_overwrites_name_and_revision_unconditionally():
+async def test_overwrite_writes_name_and_revision_unconditionally():
     collection = _FakeCollection(update_result=None)
     repo = GraphDataRepository(db=_FakeDB(collection))
 
-    await repo.save("user@example.com", "demo-1", _graph(), force=True)
+    await repo.overwrite("user@example.com", "demo-1", _graph())
 
     (filter_doc, update_doc, kwargs), *_ = collection.update_calls
     assert "revision" not in filter_doc

@@ -1,10 +1,13 @@
 import { FC } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export const AuthFailurePage: FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const errorMessage = searchParams.get('error_message') || 'Authentication failed';
+
+  useDocumentTitle('Sign-in failed');
 
   const handleRetry = () => {
     navigate('/login');

@@ -5,7 +5,7 @@ import * as autosaveService from '../services/autosaveService';
 import * as shareService from '../services/shareService';
 import { generateFilename, saveToFile, loadFromFile, parseCaseFile } from '../utils/fileOperations';
 import { useGraphStructureStore } from '../stores/graphStructureStore';
-import { GRAPH_AUTO_NAMED_EVENT } from '../services/autosaveSubscriptions';
+import { GRAPH_AUTO_NAMED_EVENT, cancelPendingAutosave } from '../services/autosaveSubscriptions';
 import { iconTooltip } from './ui/TooltipLayer';
 import { ShareCaseModal } from './ShareCaseModal';
 
@@ -115,11 +115,23 @@ const SidebarComponent: FC<SidebarProps> = ({
       return;
     }
 
+    const isOpenCase = graphId === currentGraphId;
     try {
+      // A debounced autosave still holding the case would recreate it the
+      // moment it fires — and navigating away flushes it rather than dropping
+      // it. Cancel it before the delete, then close the case as soon as the
+      // delete lands, which cancels again and empties the stores so nothing
+      // left on screen can save itself back.
+      if (isOpenCase) {
+        cancelPendingAutosave();
+      }
       await autosaveService.deleteGraph(graphId);
+      if (isOpenCase) {
+        useGraphStructureStore.getState().closeGraph();
+      }
       await loadGraphs();
       // If we deleted the current graph, navigate away from it
-      if (graphId === currentGraphId) {
+      if (isOpenCase) {
         navigate('/research');
       }
     } catch (err) {
