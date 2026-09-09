@@ -40,6 +40,9 @@ class ModelConfig:
         refusal_fallback: Whether to let Anthropic re-run a refused request on a stand-in
             model. Only set for models whose safety classifiers can decline a request
             outright; the substitution is announced in the answer (see core/llm.py).
+        plain_prose: Whether to tell the model to prefer a literal phrase over metaphor
+            and flourish. Set for models whose answers otherwise read as mannered; the
+            instruction itself lives in core/llm.py.
     """
 
     id: SupportedModel
@@ -51,6 +54,7 @@ class ModelConfig:
     context_tokens: int
     reasoning_effort: ReasoningEffort | None
     refusal_fallback: bool = False
+    plain_prose: bool = False
 
 
 MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
@@ -134,6 +138,7 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         context_tokens=1000000,
         reasoning_effort="medium",
         refusal_fallback=True,
+        plain_prose=True,
     ),
     "claude-fable-5-1-high": ModelConfig(
         id="claude-fable-5-1-high",
@@ -145,6 +150,7 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         context_tokens=1000000,
         reasoning_effort="high",
         refusal_fallback=True,
+        plain_prose=True,
     ),
     "claude-fable-5-1-max": ModelConfig(
         id="claude-fable-5-1-max",
@@ -156,6 +162,7 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         context_tokens=1000000,
         reasoning_effort="max",
         refusal_fallback=True,
+        plain_prose=True,
     ),
 }
 

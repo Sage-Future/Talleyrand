@@ -75,6 +75,19 @@ ANTHROPIC_MARKDOWN_LINK_INSTRUCTION = (
     "This does not apply to the [[1.2]] cross-link tokens, which must stay exactly as written."
 )
 
+# Claude Fable 5.1 reaches for metaphor and flourish where a literal phrase
+# would do. Enabled per model via ModelConfig.plain_prose.
+ANTHROPIC_PLAIN_PROSE_INSTRUCTION = (
+    "\n\nMannered prose substitutes metaphor and flourish for direct statement. "
+    'Instead of "a parameter worth varying," the mannered writer produces '
+    '"a dial worth turning." Instead of "this point still matters," they write '
+    '"this point earns its keep." The phrases exist to display the writer, not to '
+    "convey the idea, and readers can tell. That is why mannered prose irritates: it "
+    "makes the reader work harder so the writer can perform. It is also imprecise. "
+    "Metaphors drag in connotations the writer did not choose and cannot control. "
+    "The fix is to say what you mean. When a literal phrase is available, use it."
+)
+
 # Claude Fable 5.1's safety classifiers can decline a request outright, which would
 # otherwise reach the reader as a blank answer. Anthropic can re-run the refused
 # request on a stand-in model inside the same call; enabled per model via
@@ -281,7 +294,7 @@ async def fit_to_context(
     keep_before: str,
     trimmable: str,
     keep_after: str,
-    reserve_tokens: int = 100,
+    reserve_tokens: int = 500,
 ) -> str:
     """
     Shrink `trimmable` until `keep_before + trimmable + keep_after` fits the
@@ -295,6 +308,11 @@ async def fit_to_context(
 
     A section trimmed to nothing is not an error: the prompt goes out at
     whatever size remains, and the provider rejects it if it still does not fit.
+
+    reserve_tokens must cover what the request carries beyond the counted
+    prompt: the per-model instructions stream_text appends to the system
+    prompt (concise, Markdown links, plain prose) come to a couple of hundred
+    tokens at most.
     """
     if model.provider == "openai":
 
@@ -564,6 +582,8 @@ async def _stream_anthropic(
     if verbosity == "low":
         instructions += ANTHROPIC_CONCISE_INSTRUCTION
     instructions += ANTHROPIC_MARKDOWN_LINK_INSTRUCTION
+    if model.plain_prose:
+        instructions += ANTHROPIC_PLAIN_PROSE_INSTRUCTION
 
     content: list[dict] = []
     if cached_prefix:

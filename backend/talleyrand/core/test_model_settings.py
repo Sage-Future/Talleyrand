@@ -16,6 +16,8 @@ from talleyrand.core.model_settings import (
     resolve_model_id,
 )
 
+FABLE_5_1_IDS = {"claude-fable-5-1-medium", "claude-fable-5-1-high", "claude-fable-5-1-max"}
+
 
 def test_every_retired_model_points_at_a_current_one():
     for retired_id, replacement in RETIRED_MODELS.items():
@@ -66,8 +68,9 @@ def test_reasoning_effort_none_is_explicit_not_absent():
 
 def test_only_fable_5_1_opts_into_the_refusal_fallback():
     fallback_ids = {m.id for m in MODEL_CONFIGS.values() if m.refusal_fallback}
-    assert fallback_ids == {
-        "claude-fable-5-1-medium",
-        "claude-fable-5-1-high",
-        "claude-fable-5-1-max",
-    }
+    assert fallback_ids == FABLE_5_1_IDS
+
+
+def test_only_fable_5_1_is_asked_for_plain_prose():
+    plain_prose_ids = {m.id for m in MODEL_CONFIGS.values() if m.plain_prose}
+    assert plain_prose_ids == FABLE_5_1_IDS
