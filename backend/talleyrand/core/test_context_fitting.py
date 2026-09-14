@@ -13,7 +13,7 @@ from talleyrand.core import llm as llm_module
 from talleyrand.core.llm import TRIM_STEP_CHARS, TRIMMED_NOTICE, fit_to_context
 from talleyrand.core.model_settings import get_model_config
 
-MODEL = get_model_config("claude-fable-5-1-max")
+MODEL = get_model_config("claude-fable-5-1-max").window
 # The stub below counts four characters to the token, so a window in tokens is
 # four times as many characters of prompt.
 CHARS_PER_TOKEN = 4
@@ -63,7 +63,7 @@ async def test_oversized_case_loses_documents_and_keeps_the_rest(counted):
     # The brief and the tree are untouched: fit_to_context only ever returns the
     # trimmable section, and the whole prompt now fits with them intact.
     fitted_tokens = len("INSTRUCTIONS" + BRIEF + fitted + BODY) // CHARS_PER_TOKEN
-    assert fitted_tokens <= MODEL.context_tokens
+    assert fitted_tokens <= MODEL.max_input_tokens
 
 
 @pytest.mark.asyncio

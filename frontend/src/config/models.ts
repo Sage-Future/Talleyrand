@@ -9,84 +9,85 @@ export const PROVIDER_LABELS: Record<ModelProvider, string> = {
 
 // Within each provider, models are ordered from fastest to deepest reasoning —
 // the picker's thinking slider maps positions onto this order.
-// contextTokens mirrors the backend's ModelConfig.context_tokens (model_settings.py).
+// inputTokens mirrors the backend's ModelWindow.max_input_tokens (model_settings.py):
+// the most a request to the model may carry. A backend test keeps the two equal.
 export const MODELS = [
   {
     id: 'gpt-5.6-luna',
     provider: 'openai',
     label: 'GPT-5.6 Luna',
     description: 'Fastest, most economical',
-    contextTokens: 1050000,
+    inputTokens: 922000,
   },
   {
     id: 'gpt-5.6-terra',
     provider: 'openai',
     label: 'GPT-5.6 Terra',
     description: 'Balanced performance',
-    contextTokens: 1050000,
+    inputTokens: 922000,
   },
   {
     id: 'gpt-6-astra-medium',
     provider: 'openai',
     label: 'GPT-6 Astra medium',
     description: 'Most capable',
-    contextTokens: 1050000,
+    inputTokens: 922000,
   },
   {
     id: 'gpt-6-astra-high',
     provider: 'openai',
     label: 'GPT-6 Astra high',
     description: 'High-quality reasoning',
-    contextTokens: 1050000,
+    inputTokens: 922000,
   },
   {
     id: 'gpt-6-astra-max',
     provider: 'openai',
     label: 'GPT-6 Astra max',
     description: 'Deepest reasoning (max)',
-    contextTokens: 1050000,
+    inputTokens: 922000,
   },
   {
     id: 'claude-haiku-4-5',
     provider: 'anthropic',
     label: 'Claude Haiku 4.5',
     description: 'Fastest Claude',
-    contextTokens: 200000,
+    inputTokens: 136000,
   },
   {
     id: 'claude-sonnet-5',
     provider: 'anthropic',
     label: 'Claude Sonnet 5',
     description: 'Balanced Claude',
-    contextTokens: 1000000,
+    inputTokens: 936000,
   },
   {
     id: 'claude-fable-5-1-medium',
     provider: 'anthropic',
     label: 'Claude Fable 5.1 medium',
     description: 'Most capable Claude',
-    contextTokens: 1000000,
+    inputTokens: 936000,
   },
   {
     id: 'claude-fable-5-1-high',
     provider: 'anthropic',
     label: 'Claude Fable 5.1 high',
     description: 'High-quality reasoning',
-    contextTokens: 1000000,
+    inputTokens: 936000,
   },
   {
     id: 'claude-fable-5-1-max',
     provider: 'anthropic',
     label: 'Claude Fable 5.1 max',
     description: 'Deepest reasoning (max)',
-    contextTokens: 1000000,
+    inputTokens: 936000,
   },
 ] as const satisfies readonly {
   id: string;
   provider: ModelProvider;
   label: string;
   description: string;
-  contextTokens: number;
+  inputTokens: number;
 }[];
 
 export type ModelType = (typeof MODELS)[number]['id'];

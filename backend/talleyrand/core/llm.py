@@ -40,14 +40,15 @@ from openai.types.responses import (
 from pydantic import BaseModel
 
 from talleyrand.core.llm_logging import log_response, log_structured_response
-from talleyrand.core.model_settings import ModelConfig, Provider
+from talleyrand.core.model_settings import (
+    ANTHROPIC_MAX_OUTPUT_TOKENS,
+    ModelConfig,
+    ModelWindow,
+    Provider,
+)
 from talleyrand.core.token_counter import count_tokens
 
 logger = logging.getLogger(__name__)
-
-# Anthropic requires an explicit output-token budget on every request.
-# 64K fits the streaming output ceiling of all supported Claude models.
-ANTHROPIC_MAX_OUTPUT_TOKENS = 64_000
 
 # Trimming a prompt to fit (fit_to_context). The step is what keeps a trimmed
 # prompt cacheable across a case's questions; it costs at most one step's worth
@@ -286,9 +287,24 @@ class WebSourceCollector:
         return ordered[:MAX_WEB_SOURCES]
 
 
+async def count_prompt_tokens(
+    model: ModelWindow, api_key: str, system_prompt: str, user_prompt: str
+) -> int:
+    """
+    What a request carrying this prompt counts as, by the counter that will
+    judge it: tiktoken for OpenAI models, Anthropic's token-counting endpoint
+    (which needs the API key) for Claude models.
+    """
+    if model.provider == "openai":
+        # tiktoken counting is CPU-bound — keep it off the event loop
+        return await asyncio.to_thread(count_tokens, system_prompt + user_prompt, model.api_model)
+    client = AsyncAnthropic(api_key=api_key)
+    return await _count_anthropic_tokens(client, model, system_prompt, user_prompt)
+
+
 async def fit_to_context(
     *,
-    model: ModelConfig,
+    model: ModelWindow,
     api_key: str,
     system_prompt: str,
     keep_before: str,
@@ -297,8 +313,8 @@ async def fit_to_context(
     reserve_tokens: int = 500,
 ) -> str:
     """
-    Shrink `trimmable` until `keep_before + trimmable + keep_after` fits the
-    model's context window, and return the section that survived.
+    Shrink `trimmable` until `keep_before + trimmable + keep_after` fits what
+    the model accepts as input, and return the section that survived.
 
     Only the middle section gives way, so callers put there the one material
     they can afford to lose. In research that is the attached documents: a case
@@ -314,28 +330,18 @@ async def fit_to_context(
     prompt (concise, Markdown links, plain prose) come to a couple of hundred
     tokens at most.
     """
-    if model.provider == "openai":
 
-        async def count(prompt: str) -> int:
-            # tiktoken counting is CPU-bound — keep it off the event loop
-            return await asyncio.to_thread(count_tokens, system_prompt + prompt, model.id)
+    async def count(prompt: str) -> int:
+        return await count_prompt_tokens(model, api_key, system_prompt, prompt)
 
-        available_tokens = model.context_tokens - reserve_tokens
-    else:
-        client = AsyncAnthropic(api_key=api_key)
-
-        async def count(prompt: str) -> int:
-            return await _count_anthropic_tokens(client, model, system_prompt, prompt)
-
-        # Input and output share the context window, so reserve the output budget too
-        available_tokens = model.context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS - reserve_tokens
+    available_tokens = model.max_input_tokens - reserve_tokens
 
     total_tokens = await count(keep_before + trimmable + keep_after)
     if total_tokens <= available_tokens:
         return trimmable
 
     logger.warning(
-        f"Prompt exceeds {model.id}'s context window: {total_tokens} > {available_tokens}. "
+        f"Prompt exceeds {model.api_model}'s input limit: {total_tokens} > {available_tokens}. "
         "Trimming the trimmable section..."
     )
     initial_tokens = total_tokens
@@ -370,7 +376,7 @@ def _trim(trimmable: str, kept: int) -> str:
 
 
 async def _count_anthropic_tokens(
-    client: AsyncAnthropic, model: ModelConfig, system_prompt: str, user_prompt: str
+    client: AsyncAnthropic, model: ModelWindow, system_prompt: str, user_prompt: str
 ) -> int:
     result = await client.messages.count_tokens(
         model=model.api_model,

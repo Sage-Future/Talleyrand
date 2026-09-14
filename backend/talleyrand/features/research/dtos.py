@@ -29,6 +29,29 @@ class ResearchSuggestResponseDTO(BaseSchema):
     questions: list[str]
 
 
+class ContextSizeRequestDTO(BaseSchema):
+    """Request body for counting the prompt the next question would send."""
+
+    # Preset id of the model that would answer (a retired id resolves as usual)
+    model: str
+    # The question the draft would be filed under; a missing or unknown parent
+    # makes it a new root question
+    parent_node_id: UUID | None = None
+    draft_query: str = ""
+    # Documents staged on the draft, not yet in the saved case
+    draft_documents: list[DocumentDTO] = []
+
+
+class ContextSizeResponseDTO(BaseSchema):
+    """How big the next question's prompt is, against what its model accepts."""
+
+    tokens: int
+    max_input_tokens: int
+    # True when tiktoken stood in for Anthropic's counter (no Anthropic key
+    # was sent, or the count failed); the real request may count differently.
+    estimated: bool
+
+
 class BigPictureQuestionDTO(BaseSchema):
     """One big-picture suggestion, placed under an existing question of the tree."""
 

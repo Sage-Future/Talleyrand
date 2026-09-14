@@ -9,10 +9,12 @@ from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from talleyrand.core.llm import parse_structured
+from talleyrand.core.model_settings import get_model_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
 from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.dtos import GraphNoId
 from talleyrand.features.research.context_builder import build_research_context
+from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.dtos import (
     ResearchSuggestRequestDTO,
     ResearchSuggestResponseDTO,
@@ -20,7 +22,7 @@ from talleyrand.features.research.dtos import (
 )
 
 MAX_SUGGESTIONS = 3
-SUGGESTER_MODEL = "gpt-6-astra"
+SUGGESTER_MODEL = get_model_window("gpt-6-astra")
 SUGGESTER_REASONING_EFFORT = "low"
 
 INSTRUCTIONS = (
@@ -83,7 +85,7 @@ async def get_research_suggestions(
     selection: SelectionDTO | None = None,
 ) -> ResearchSuggestionSchema:
     """Generate follow-up question suggestions for a read answer."""
-    context = build_research_context(graph, str(node_id)).text
+    context = build_research_context(graph, str(node_id))
 
     extra_sections: list[str] = []
 
@@ -118,12 +120,21 @@ async def get_research_suggestions(
             f"{MAX_SUGGESTIONS} follow-up questions to file under it."
         )
 
-    return await parse_structured(
-        caller="research_suggestions",
+    instructions = INSTRUCTIONS.format(max_suggestions=MAX_SUGGESTIONS)
+    tail_sections = [*extra_sections, task]
+    context = await fit_research_context(
+        context,
         model=SUGGESTER_MODEL,
         api_key=openai_api_key,
-        system_prompt=INSTRUCTIONS.format(max_suggestions=MAX_SUGGESTIONS),
-        user_content="\n\n".join([context, *extra_sections, task]),
+        system_prompt=instructions,
+        tail="\n\n" + "\n\n".join(tail_sections),
+    )
+    return await parse_structured(
+        caller="research_suggestions",
+        model=SUGGESTER_MODEL.api_model,
+        api_key=openai_api_key,
+        system_prompt=instructions,
+        user_content="\n\n".join([context.text, *tail_sections]),
         schema=ResearchSuggestionSchema,
         reasoning_effort=SUGGESTER_REASONING_EFFORT,
     )
