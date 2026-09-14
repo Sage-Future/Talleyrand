@@ -13,7 +13,8 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 
-from talleyrand.core.llm import parse_structured
+from talleyrand.core.llm import fit_to_context, parse_structured
+from talleyrand.core.model_settings import get_model_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
 from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.dtos import DocumentDTO
@@ -26,7 +27,7 @@ from talleyrand.features.research.dtos import (
     KickstartQuestionsResponseDTO,
 )
 
-KICKSTART_MODEL = "gpt-6-astra"
+KICKSTART_MODEL = get_model_window("gpt-6-astra")
 KICKSTART_REASONING_EFFORT = "low"
 # Caps only the model's own proposals; the user's own questions extracted from
 # the notes are always returned in full, however many there are.
@@ -116,11 +117,28 @@ class KickstartQuestionsSchema(BaseModel):
     questions: list[KickstartQuestionItemSchema]
 
 
-def _user_content(sections: list[str], documents: list[DocumentDTO]) -> str | list[dict]:
-    """Join prompt sections; inline txt documents, attach PDFs as file parts."""
+async def _user_content(
+    sections: list[str], documents: list[DocumentDTO], *, api_key: str, system_prompt: str
+) -> str | list[dict]:
+    """
+    Join prompt sections; inline txt documents, attach PDFs as file parts.
+
+    The inlined documents are the section that gives way when the notes and
+    documents together are more than the model accepts.
+    """
     parts = list(sections)
     if documents:
-        parts.append("\n".join(format_documents(documents, "", label="ATTACHED DOCUMENTS")))
+        attached = "\n".join(format_documents(documents, "", label="ATTACHED DOCUMENTS"))
+        parts.append(
+            await fit_to_context(
+                model=KICKSTART_MODEL,
+                api_key=api_key,
+                system_prompt=system_prompt,
+                keep_before="\n\n".join(parts) + "\n\n",
+                trimmable=attached,
+                keep_after="",
+            )
+        )
 
     text = "\n\n".join(parts)
     pdf_docs = [doc for doc in documents if doc.type == "pdf"]
@@ -154,10 +172,15 @@ async def generate_brief(
 
     parsed = await parse_structured(
         caller="research_kickstart_brief",
-        model=KICKSTART_MODEL,
+        model=KICKSTART_MODEL.api_model,
         api_key=openai_api_key,
         system_prompt=BRIEF_INSTRUCTIONS,
-        user_content=_user_content([f"NOTES:\n{notes}"], payload.documents),
+        user_content=await _user_content(
+            [f"NOTES:\n{notes}"],
+            payload.documents,
+            api_key=openai_api_key,
+            system_prompt=BRIEF_INSTRUCTIONS,
+        ),
         schema=KickstartBriefSchema,
         reasoning_effort=KICKSTART_REASONING_EFFORT,
     )
@@ -200,12 +223,15 @@ async def generate_questions(
         "questions, and extract the user's own questions if the NOTES contain any."
     )
 
+    instructions = QUESTIONS_INSTRUCTIONS.format(max_questions=max_questions)
     parsed = await parse_structured(
         caller="research_kickstart_questions",
-        model=KICKSTART_MODEL,
+        model=KICKSTART_MODEL.api_model,
         api_key=openai_api_key,
-        system_prompt=QUESTIONS_INSTRUCTIONS.format(max_questions=max_questions),
-        user_content=_user_content(sections, payload.documents),
+        system_prompt=instructions,
+        user_content=await _user_content(
+            sections, payload.documents, api_key=openai_api_key, system_prompt=instructions
+        ),
         schema=KickstartQuestionsSchema,
         reasoning_effort=KICKSTART_REASONING_EFFORT,
         web_search_enabled=True,

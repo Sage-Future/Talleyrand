@@ -7,14 +7,24 @@ that breaks: a retired id pointing at a replacement that itself got retired, and
 a retired id lingering in the current list.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 
 from talleyrand.core.model_settings import (
+    ANTHROPIC_MAX_OUTPUT_TOKENS,
     MODEL_CONFIGS,
+    MODEL_WINDOWS,
     RETIRED_MODELS,
     get_model_config,
+    get_model_window,
     resolve_model_id,
 )
+
+# The frontend keeps its own copy of each preset's input limit for the context
+# meter; it lives alongside the backend in the repository.
+FRONTEND_MODELS = Path(__file__).resolve().parents[3] / "frontend" / "src" / "config" / "models.ts"
 
 FABLE_5_1_IDS = {"claude-fable-5-1-medium", "claude-fable-5-1-high", "claude-fable-5-1-max"}
 
@@ -74,3 +84,50 @@ def test_only_fable_5_1_opts_into_the_refusal_fallback():
 def test_only_fable_5_1_is_asked_for_plain_prose():
     plain_prose_ids = {m.id for m in MODEL_CONFIGS.values() if m.plain_prose}
     assert plain_prose_ids == FABLE_5_1_IDS
+
+
+def test_every_preset_runs_on_a_model_with_a_recorded_window():
+    for config in MODEL_CONFIGS.values():
+        assert config.window.api_model == config.api_model
+        assert config.provider == config.window.provider
+
+
+def test_an_unknown_api_model_has_no_window():
+    with pytest.raises(ValueError, match="No context window recorded for 'gpt-imaginary'"):
+        get_model_window("gpt-imaginary")
+
+
+def test_no_input_limit_exceeds_its_window():
+    for window in MODEL_WINDOWS.values():
+        assert 0 < window.max_input_tokens <= window.context_tokens
+        assert 0 < window.max_output_tokens <= window.context_tokens
+
+
+def test_openai_input_limit_is_the_window_less_the_output_ceiling():
+    # OpenAI publishes the input ceiling separately (922,000 for the 1,050,000
+    # windows); it is enforced whatever output a request asks for.
+    for window in MODEL_WINDOWS.values():
+        if window.provider == "openai":
+            assert window.max_input_tokens == window.context_tokens - window.max_output_tokens
+
+
+def test_anthropic_input_limit_leaves_room_for_the_output_budget():
+    # Anthropic requires an output budget on every request and takes it out of
+    # the same window, so the input limit is what is left after our budget.
+    for window in MODEL_WINDOWS.values():
+        if window.provider == "anthropic":
+            assert window.max_output_tokens >= ANTHROPIC_MAX_OUTPUT_TOKENS
+            assert window.max_input_tokens == window.context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS
+
+
+def test_frontend_mirrors_each_presets_input_limit():
+    if not FRONTEND_MODELS.exists():
+        pytest.skip("frontend is not checked out next to the backend")
+    source = FRONTEND_MODELS.read_text()
+    mirrored = {
+        preset_id: int(tokens)
+        for preset_id, tokens in re.findall(r"id: '([^']+)'[^}]*?inputTokens: (\d+)", source)
+    }
+    assert mirrored == {
+        preset_id: config.max_input_tokens for preset_id, config in MODEL_CONFIGS.items()
+    }

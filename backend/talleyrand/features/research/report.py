@@ -16,6 +16,7 @@ from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 
 from talleyrand.core.llm import parse_structured
+from talleyrand.core.model_settings import get_model_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
 from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.dtos import GraphNoId
@@ -23,10 +24,11 @@ from talleyrand.features.research.context_builder import (
     build_question_tree,
     build_research_context,
 )
+from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.dtos import ReportRequestDTO, ReportResponseDTO
 from talleyrand.features.research.ref_tokens import outline_ref_tokens
 
-REPORT_MODEL = "gpt-6-astra"
+REPORT_MODEL = get_model_window("gpt-6-astra")
 REPORT_REASONING_EFFORT = "xhigh"
 
 INSTRUCTIONS = (
@@ -68,24 +70,23 @@ class ReportSchema(BaseModel):
     markdown: str
 
 
-def _build_report_user_content(graph: GraphNoId, guidance: str) -> str:
+async def _build_report_user_content(graph: GraphNoId, guidance: str, openai_api_key: str) -> str:
     """Overview context (brief, tree with answers + inline highlights, read order)
     plus the report-only DECLINED and consolidated HIGHLIGHTS sections. An optional
-    user guidance line, when given, leads as the top-priority steering signal."""
-    context = build_research_context(graph, None).text
+    user guidance line, when given, leads as the top-priority steering signal.
+    The documents inside the context are cut to fit the report model."""
     tree = build_question_tree(graph)
 
-    sections: list[str] = []
+    before: list[str] = []
+    after: list[str] = []
 
     guidance = guidance.strip()
     if guidance:
-        sections.append(
+        before.append(
             "REPORT GUIDANCE (the user's explicit instruction for how to focus this "
             "report — follow it as the top priority, over the default weighting, as long "
             "as it stays faithful to the case):\n" + guidance
         )
-
-    sections.append(context)
 
     highlight_lines: list[str] = []
     for content in graph.node_contents:
@@ -99,7 +100,7 @@ def _build_report_user_content(graph: GraphNoId, guidance: str) -> str:
                 f'  - [{outline}] "{outline_ref_tokens(highlight.text, tree.outline)}"'
             )
     if highlight_lines:
-        sections.append(
+        after.append(
             "HIGHLIGHTS (every passage the user marked, with the question it came from — "
             "the spine of the report):\n" + "\n".join(highlight_lines)
         )
@@ -113,14 +114,23 @@ def _build_report_user_content(graph: GraphNoId, guidance: str) -> str:
             continue
         loved_lines.append(f"  - [{outline}] {content.query}")
     if loved_lines:
-        sections.append(
+        after.append(
             "LOVED ANSWERS (the user marked these whole answers as especially useful — "
             "alongside the highlights, the strongest signal of what to foreground):\n"
             + "\n".join(loved_lines)
         )
 
-    sections.append("Write the Markdown report of this case now, following all the rules above.")
-    return "\n\n".join(sections)
+    after.append("Write the Markdown report of this case now, following all the rules above.")
+
+    context = await fit_research_context(
+        build_research_context(graph, None),
+        model=REPORT_MODEL,
+        api_key=openai_api_key,
+        system_prompt=INSTRUCTIONS,
+        head="".join(f"{section}\n\n" for section in before),
+        tail="".join(f"\n\n{section}" for section in after),
+    )
+    return "\n\n".join([*before, context.text, *after])
 
 
 async def generate_report(
@@ -139,10 +149,10 @@ async def generate_report(
 
     parsed = await parse_structured(
         caller="research_report",
-        model=REPORT_MODEL,
+        model=REPORT_MODEL.api_model,
         api_key=openai_api_key,
         system_prompt=INSTRUCTIONS,
-        user_content=_build_report_user_content(graph, payload.guidance),
+        user_content=await _build_report_user_content(graph, payload.guidance, openai_api_key),
         schema=ReportSchema,
         reasoning_effort=REPORT_REASONING_EFFORT,
     )

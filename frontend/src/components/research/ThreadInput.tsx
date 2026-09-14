@@ -4,15 +4,14 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import { MODELS } from '../../config/models';
+import { useNextQuestionContextSize } from '../../hooks/useNextQuestionContextSize';
 import { useGraphStructureStore } from '../../stores/graphStructureStore';
 import { useNodeContentStore } from '../../stores/nodeContentStore';
 import { useResearchStore } from '../../stores/researchStore';
-import { estimateNextQuestionTokens } from '../../utils/contextEstimate';
 import { nodeDocumentBytes, totalDocumentBytes } from '../../utils/documentBudget';
 import { insertNewline } from '../../utils/insertNewline';
 import { DictateButton } from '../ui/DictateButton';
@@ -85,49 +84,45 @@ function formatTokens(count: number): string {
   return `${count}`;
 }
 
+// The draft appears twice in the prompt (as a question in the tree and as the
+// CURRENT QUESTION line); at about four characters to the token that is half a
+// token per character. It changes with every keystroke, so it is not sent for
+// counting.
+function estimateDraftQueryTokens(draftQuery: string): number {
+  return Math.ceil(draftQuery.length / 2);
+}
+
 /**
- * Ring meter showing how full the selected model's context window would be
- * for the next question: the whole tree context plus the draft and its staged
- * documents, estimated at ~4 chars/token to track the prompt the backend
- * assembles.
+ * Ring meter showing how full the selected model's input window would be for
+ * the next question. The count comes from the backend, made by the tokenizer
+ * that will judge the request (useNextQuestionContextSize); only the draft
+ * text is estimated locally. Over 100% means the documents will be cut to fit.
  */
-const ContextGauge: FC<{ draftQuery: string; draftDocuments: Document[] }> = ({
-  draftQuery,
-  draftDocuments,
-}) => {
-  const nodes = useGraphStructureStore(s => s.nodes);
-  const edges = useGraphStructureStore(s => s.edges);
-  const nodeContents = useNodeContentStore(s => s.nodeContents);
-  const brief = useResearchStore(s => s.brief);
-  const caseDocuments = useResearchStore(s => s.caseDocuments);
-  const readHistory = useResearchStore(s => s.readHistory);
+const ContextGauge: FC<{
+  draftQuery: string;
+  draftDocuments: Document[];
+  parentNodeId: string | null;
+}> = ({ draftQuery, draftDocuments, parentNodeId }) => {
   const defaultModel = useResearchStore(s => s.defaultModel);
-
   const model = MODELS.find(m => m.id === defaultModel) ?? MODELS[0];
+  const size = useNextQuestionContextSize({ model: model.id, parentNodeId, draftDocuments });
 
-  const tokens = useMemo(
-    () =>
-      estimateNextQuestionTokens({
-        nodes,
-        edges,
-        nodeContents,
-        brief,
-        caseDocuments,
-        readNodeIds: new Set(readHistory.map(event => event.nodeId)),
-        draftQuery,
-        draftDocuments,
-      }),
-    [nodes, edges, nodeContents, brief, caseDocuments, readHistory, draftQuery, draftDocuments]
-  );
-
-  const usage = Math.min(1, tokens / model.contextTokens);
-  const percent = Math.round(usage * 100);
+  const limit = size?.maxInputTokens ?? model.inputTokens;
+  const tokens = size === undefined ? null : size.tokens + estimateDraftQueryTokens(draftQuery);
+  const usage = tokens === null ? 0 : tokens / limit;
   const tone = usage >= 0.9 ? 'text-rose-600' : usage >= 0.7 ? 'text-amber-600' : 'text-stone-400';
+
+  let tooltip = 'Counting the context for the next question…';
+  if (tokens !== null) {
+    tooltip = `${size?.estimated ? 'Estimated' : 'Counted'} context for the next question: ${formatTokens(tokens)} of ${formatTokens(limit)} tokens`;
+    if (size?.estimated) tooltip += ' (add an Anthropic API key in Settings for an exact count)';
+    if (usage > 1) tooltip += '. The documents will be cut to fit.';
+  }
 
   return (
     <div
       className={`flex cursor-default items-center gap-1 px-1.5 py-1 text-[11px] tabular-nums ${tone}`}
-      data-tooltip={`Estimated context for the next question: ~${formatTokens(tokens)} of ${formatTokens(model.contextTokens)} tokens`}
+      data-tooltip={tooltip}
       data-testid="context-gauge"
     >
       <svg className="h-3.5 w-3.5 -rotate-90" viewBox="0 0 16 16">
@@ -147,10 +142,10 @@ const ContextGauge: FC<{ draftQuery: string; draftDocuments: Document[] }> = ({
           fill="none"
           stroke="currentColor"
           strokeWidth="2.5"
-          strokeDasharray={`${usage * GAUGE_CIRCUMFERENCE} ${GAUGE_CIRCUMFERENCE}`}
+          strokeDasharray={`${Math.min(1, usage) * GAUGE_CIRCUMFERENCE} ${GAUGE_CIRCUMFERENCE}`}
         />
       </svg>
-      {percent}%
+      {tokens === null ? '…' : `${Math.round(usage * 100)}%`}
     </div>
   );
 };
@@ -359,7 +354,11 @@ export const ThreadInput: FC = () => {
                 disabled={!enabled}
                 testId="thread-dictate"
               />
-              <ContextGauge draftQuery={value} draftDocuments={pendingDocuments} />
+              <ContextGauge
+                draftQuery={value}
+                draftDocuments={pendingDocuments}
+                parentNodeId={composingRoot || treeEmpty ? null : cursorNodeId}
+              />
             </div>
             <button
               onClick={handleSubmit}
