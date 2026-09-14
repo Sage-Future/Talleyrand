@@ -9,16 +9,18 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from talleyrand.core.llm import parse_structured
+from talleyrand.core.model_settings import get_model_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
 from talleyrand.features.graph.dtos import GraphNoId
 from talleyrand.features.research.context_builder import (
     build_question_tree,
     build_research_context,
 )
+from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.dtos import BigPictureQuestionDTO
 
 MAX_SUGGESTIONS = 5
-SUGGESTER_MODEL = "gpt-6-astra"
+SUGGESTER_MODEL = get_model_window("gpt-6-astra")
 SUGGESTER_REASONING_EFFORT = "medium"
 
 Persona = Literal[
@@ -104,7 +106,7 @@ async def get_big_picture_suggestions(
     closed threads: the model is told to leave them alone (prompting) and any
     suggestion that still lands on one is dropped (post-filtering).
     """
-    context = build_research_context(graph, None).text
+    context = build_research_context(graph, None)
     tree = build_question_tree(graph)
 
     content_by_id = {str(content.id): content for content in graph.node_contents}
@@ -141,12 +143,21 @@ async def get_big_picture_suggestions(
         "big-picture questions, one from the standpoint of each panel member."
     )
 
-    parsed = await parse_structured(
-        caller="big_picture_suggestions",
+    instructions = INSTRUCTIONS.format(max_suggestions=MAX_SUGGESTIONS)
+    tail_sections = [*extra_sections, task]
+    context = await fit_research_context(
+        context,
         model=SUGGESTER_MODEL,
         api_key=openai_api_key,
-        system_prompt=INSTRUCTIONS.format(max_suggestions=MAX_SUGGESTIONS),
-        user_content="\n\n".join([context, *extra_sections, task]),
+        system_prompt=instructions,
+        tail="\n\n" + "\n\n".join(tail_sections),
+    )
+    parsed = await parse_structured(
+        caller="big_picture_suggestions",
+        model=SUGGESTER_MODEL.api_model,
+        api_key=openai_api_key,
+        system_prompt=instructions,
+        user_content="\n\n".join([context.text, *tail_sections]),
         schema=BigPictureSuggestionSchema,
         reasoning_effort=SUGGESTER_REASONING_EFFORT,
         # Web search lets the panel ground its questions in current real-world

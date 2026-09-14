@@ -4,13 +4,11 @@ Query service for the research view.
 
 import logging
 from collections.abc import AsyncGenerator
-from dataclasses import replace
 from typing import Literal
 
 from talleyrand.core.llm import (
     PdfAttachment,
     StreamChunk,
-    fit_to_context,
     resolve_api_key,
     stream_text,
 )
@@ -20,6 +18,7 @@ from talleyrand.features.research.context_builder import (
     build_research_context,
     collect_research_pdf_documents,
 )
+from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.prompts import RESEARCH_ANSWERER_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
@@ -47,20 +46,14 @@ async def do_research_query(
     api_key = resolve_api_key(node_llm_model, openai_api_key, anthropic_api_key)
 
     instructions = RESEARCH_ANSWERER_INSTRUCTIONS
-    context = build_research_context(graph, node_id)
 
     # A case can hold more reading than the model can take. The documents are
     # what gives way: the brief and the tree are what the question is about.
-    context = replace(
-        context,
-        documents=await fit_to_context(
-            model=node_llm_model,
-            api_key=api_key,
-            system_prompt=instructions,
-            keep_before=context.brief,
-            trimmable=context.documents,
-            keep_after=context.body,
-        ),
+    context = await fit_research_context(
+        build_research_context(graph, node_id),
+        model=node_llm_model.window,
+        api_key=api_key,
+        system_prompt=instructions,
     )
 
     pdf_documents = [

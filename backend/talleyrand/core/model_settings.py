@@ -22,20 +22,114 @@ type Provider = Literal["openai", "anthropic"]
 # GPT-6 Astra does not accept "none": its ladder starts at "low".
 type ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh", "max"]
 
+# The output budget (max_tokens) every Anthropic request asks for. Anthropic
+# requires one, and input and output share the window, so the budget comes off
+# the input side of every Claude model's window. 64K fits under the output
+# ceiling of every supported Claude model; asking for more would leave less
+# room for the case.
+ANTHROPIC_MAX_OUTPUT_TOKENS = 64_000
+
+
+@dataclass(frozen=True)
+class ModelWindow:
+    """
+    How much one API model reads and writes, per the provider's published limits.
+
+    Attributes:
+        provider: LLM provider serving the model.
+        api_model: The model name sent to the provider's API.
+        context_tokens: The window that input and output share.
+        max_output_tokens: The most the model may write in one response.
+        max_input_tokens: The most a request may carry; the provider rejects
+            anything larger. For OpenAI this is the published input ceiling,
+            enforced whatever output the request asks for. For Anthropic it is
+            the window less ANTHROPIC_MAX_OUTPUT_TOKENS, the output budget every
+            request here reserves.
+    """
+
+    provider: Provider
+    api_model: str
+    context_tokens: int
+    max_output_tokens: int
+    max_input_tokens: int
+
+
+def _openai_window(
+    api_model: str, *, context_tokens: int, max_input_tokens: int, max_output_tokens: int
+) -> ModelWindow:
+    return ModelWindow(
+        provider="openai",
+        api_model=api_model,
+        context_tokens=context_tokens,
+        max_output_tokens=max_output_tokens,
+        max_input_tokens=max_input_tokens,
+    )
+
+
+def _anthropic_window(
+    api_model: str, *, context_tokens: int, max_output_tokens: int
+) -> ModelWindow:
+    return ModelWindow(
+        provider="anthropic",
+        api_model=api_model,
+        context_tokens=context_tokens,
+        max_output_tokens=max_output_tokens,
+        max_input_tokens=context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS,
+    )
+
+
+# One entry per API model, from the providers' model pages (checked 2026-09-14):
+#   https://developers.openai.com/api/docs/models/<model>
+#   https://docs.claude.com/en/docs/about-claude/models/overview
+# The frontend's models.ts mirrors max_input_tokens; a test keeps them equal.
+MODEL_WINDOWS: dict[str, ModelWindow] = {
+    "gpt-5.6-luna": _openai_window(
+        "gpt-5.6-luna",
+        context_tokens=1_050_000,
+        max_input_tokens=922_000,
+        max_output_tokens=128_000,
+    ),
+    "gpt-5.6-terra": _openai_window(
+        "gpt-5.6-terra",
+        context_tokens=1_050_000,
+        max_input_tokens=922_000,
+        max_output_tokens=128_000,
+    ),
+    "gpt-6-astra": _openai_window(
+        "gpt-6-astra", context_tokens=1_050_000, max_input_tokens=922_000, max_output_tokens=128_000
+    ),
+    "claude-haiku-4-5": _anthropic_window(
+        "claude-haiku-4-5", context_tokens=200_000, max_output_tokens=64_000
+    ),
+    "claude-sonnet-5": _anthropic_window(
+        "claude-sonnet-5", context_tokens=1_000_000, max_output_tokens=128_000
+    ),
+    "claude-fable-5-1": _anthropic_window(
+        "claude-fable-5-1", context_tokens=1_000_000, max_output_tokens=128_000
+    ),
+}
+
+
+def get_model_window(api_model: str) -> ModelWindow:
+    """The published limits of an API model; a name without an entry is a bug."""
+    try:
+        return MODEL_WINDOWS[api_model]
+    except KeyError:
+        known = ", ".join(MODEL_WINDOWS)
+        raise ValueError(f"No context window recorded for '{api_model}'. Known: {known}") from None
+
 
 @dataclass
 class ModelConfig:
     """
-    Configuration class for AI model settings.
+    A model preset the user can pick: an API model at one reasoning effort.
 
     Attributes:
         id (SupportedModel): Unique preset identifier used in the UI and config lookups.
-        provider (Provider): LLM provider the model belongs to.
-        api_model (str): The actual model name sent to the provider's API.
+        api_model (str): The API model the preset runs on; its limits are in MODEL_WINDOWS.
         label (str): Human-readable display name for the model.
         description (str): Detailed description of the model's capabilities and use cases.
         order (int): Sort order for displaying models in user interfaces.
-        context_tokens (int): Maximum number of tokens the model can process in its context window.
         reasoning_effort: Level of computational effort the model applies to reasoning tasks.
         refusal_fallback: Whether to let Anthropic re-run a refused request on a stand-in
             model. Only set for models whose safety classifiers can decline a request
@@ -46,120 +140,110 @@ class ModelConfig:
     """
 
     id: SupportedModel
-    provider: Provider
     api_model: str
     label: str
     description: str
     order: int
-    context_tokens: int
     reasoning_effort: ReasoningEffort | None
     refusal_fallback: bool = False
     plain_prose: bool = False
+
+    @property
+    def window(self) -> ModelWindow:
+        return get_model_window(self.api_model)
+
+    @property
+    def provider(self) -> Provider:
+        return self.window.provider
+
+    @property
+    def max_input_tokens(self) -> int:
+        return self.window.max_input_tokens
 
 
 MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
     "gpt-5.6-luna": ModelConfig(
         id="gpt-5.6-luna",
-        provider="openai",
         api_model="gpt-5.6-luna",
         label="GPT-5.6 Luna",
         description="Fastest, most economical",
         order=1,
-        context_tokens=1050000,
         reasoning_effort="none",
     ),
     "gpt-5.6-terra": ModelConfig(
         id="gpt-5.6-terra",
-        provider="openai",
         api_model="gpt-5.6-terra",
         label="GPT-5.6 Terra",
         description="Balanced performance",
         order=2,
-        context_tokens=1050000,
         reasoning_effort="medium",
     ),
     "gpt-6-astra-medium": ModelConfig(
         id="gpt-6-astra-medium",
-        provider="openai",
         api_model="gpt-6-astra",
         label="GPT-6 Astra medium",
         description="Most capable",
         order=3,
-        context_tokens=1050000,
         reasoning_effort="medium",
     ),
     "gpt-6-astra-high": ModelConfig(
         id="gpt-6-astra-high",
-        provider="openai",
         api_model="gpt-6-astra",
         label="GPT-6 Astra high",
         description="High-quality reasoning",
         order=4,
-        context_tokens=1050000,
         reasoning_effort="high",
     ),
     "gpt-6-astra-max": ModelConfig(
         id="gpt-6-astra-max",
-        provider="openai",
         api_model="gpt-6-astra",
         label="GPT-6 Astra max",
         description="Deepest reasoning (max)",
         order=5,
-        context_tokens=1050000,
         reasoning_effort="max",
     ),
     "claude-haiku-4-5": ModelConfig(
         id="claude-haiku-4-5",
-        provider="anthropic",
         api_model="claude-haiku-4-5",
         label="Claude Haiku 4.5",
         description="Fastest Claude",
         order=6,
-        context_tokens=200000,
         reasoning_effort=None,
     ),
     "claude-sonnet-5": ModelConfig(
         id="claude-sonnet-5",
-        provider="anthropic",
         api_model="claude-sonnet-5",
         label="Claude Sonnet 5",
         description="Balanced Claude",
         order=7,
-        context_tokens=1000000,
         reasoning_effort="medium",
     ),
     "claude-fable-5-1-medium": ModelConfig(
         id="claude-fable-5-1-medium",
-        provider="anthropic",
         api_model="claude-fable-5-1",
         label="Claude Fable 5.1 medium",
         description="Most capable Claude",
         order=8,
-        context_tokens=1000000,
         reasoning_effort="medium",
         refusal_fallback=True,
         plain_prose=True,
     ),
     "claude-fable-5-1-high": ModelConfig(
         id="claude-fable-5-1-high",
-        provider="anthropic",
         api_model="claude-fable-5-1",
         label="Claude Fable 5.1 high",
         description="High-quality reasoning",
         order=9,
-        context_tokens=1000000,
         reasoning_effort="high",
         refusal_fallback=True,
         plain_prose=True,
     ),
     "claude-fable-5-1-max": ModelConfig(
         id="claude-fable-5-1-max",
-        provider="anthropic",
         api_model="claude-fable-5-1",
         label="Claude Fable 5.1 max",
         description="Deepest reasoning (max)",
         order=10,
-        context_tokens=1000000,
         reasoning_effort="max",
         refusal_fallback=True,
         plain_prose=True,

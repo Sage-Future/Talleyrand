@@ -404,6 +404,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/{graph_id}/context-size": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Context Size
+         * @description Count the prompt the next question would send, against what its model accepts.
+         */
+        post: operations["context_size_research__graph_id__context_size_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/{graph_id}/stream-ticket": {
         parameters: {
             query?: never;
@@ -533,6 +553,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ContextSizeRequestDTO
+         * @description Request body for counting the prompt the next question would send.
+         */
+        ContextSizeRequestDTO: {
+            /** Model */
+            model: string;
+            /** Parentnodeid */
+            parentNodeId?: string | null;
+            /**
+             * Draftquery
+             * @default
+             */
+            draftQuery: string;
+            /**
+             * Draftdocuments
+             * @default []
+             */
+            draftDocuments: components["schemas"]["DocumentDTO"][];
+        };
+        /**
+         * ContextSizeResponseDTO
+         * @description How big the next question's prompt is, against what its model accepts.
+         */
+        ContextSizeResponseDTO: {
+            /** Tokens */
+            tokens: number;
+            /** Maxinputtokens */
+            maxInputTokens: number;
+            /** Estimated */
+            estimated: boolean;
+        };
         /**
          * DeclinedQuestionDTO
          * @description A suggestion the user explicitly declined; feeds the suggester as an anti-target.
@@ -1899,6 +1951,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    context_size_research__graph_id__context_size_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-openai-api-key"?: string | null;
+                "x-anthropic-api-key"?: string | null;
+            };
+            path: {
+                graph_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextSizeRequestDTO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextSizeResponseDTO"];
                 };
             };
             /** @description Validation Error */

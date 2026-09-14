@@ -1,26 +1,24 @@
 """
-Token counting utility for managing context limits.
+Token counting for OpenAI models.
 """
 
 from functools import lru_cache
 
 import tiktoken
 
-from talleyrand.core.model_settings import SupportedModel
-
 
 @lru_cache(maxsize=8)
-def get_encoding_for_model(model: SupportedModel) -> tiktoken.Encoding:
+def get_encoding_for_model(api_model: str) -> tiktoken.Encoding:
     """
-    Get the tiktoken encoding for a given model.
+    The tiktoken encoding to count an OpenAI model's prompt with.
 
     tiktoken ships no entry for the GPT-5.6 or GPT-6 families, so every
     OpenAI model is counted with o200k_base, the newest encoding it has. The
-    count only decides how much of an oversized prompt to trim, so a close
-    approximation is enough.
+    count decides how much of an oversized prompt to trim and what the context
+    meter shows, so a close approximation is enough.
 
     Args:
-        model: The model identifier
+        api_model: The model name sent to the API
 
     Returns:
         tiktoken.Encoding instance for the model
@@ -30,16 +28,16 @@ def get_encoding_for_model(model: SupportedModel) -> tiktoken.Encoding:
     return tiktoken.get_encoding("o200k_base")
 
 
-def count_tokens(text: str, model: SupportedModel) -> int:
+def count_tokens(text: str, api_model: str) -> int:
     """
-    Count the number of tokens in a text string for a given model.
+    Count the number of tokens in a text string for a given OpenAI model.
 
     Args:
         text: The text to count tokens for
-        model: The model identifier to use for encoding
+        api_model: The model name sent to the API
 
     Returns:
         Number of tokens in the text
     """
-    encoding = get_encoding_for_model(model)
+    encoding = get_encoding_for_model(api_model)
     return len(encoding.encode(text))

@@ -7,7 +7,7 @@ from fastapi.routing import APIRouter
 
 from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.rate_limit.service import per_user_rate_limit
-from talleyrand.features.research import kickstart, report, suggestions
+from talleyrand.features.research import context_size, kickstart, report, suggestions
 from talleyrand.features.research.generation import routes as generation
 
 router = APIRouter(prefix="/research", tags=["research"])
@@ -23,6 +23,7 @@ limit_selection_suggest = per_user_rate_limit("selection-suggest", per_minute=40
 limit_kickstart = per_user_rate_limit("kickstart", per_minute=20)
 limit_report = per_user_rate_limit("report", per_minute=10)
 limit_cheat_sheets = per_user_rate_limit("cheat-sheets", per_minute=30)
+limit_context_size = per_user_rate_limit("context-size", per_minute=60)
 
 # Transient suggestions for the selection popup and the legacy canvas:
 # context ships in the body, nothing is persisted server-side.
@@ -62,6 +63,15 @@ router.add_api_route(
     generation.suggest_big_picture,
     methods=["POST"],
     dependencies=[Depends(limit_suggestions)],
+)
+
+# The composer's context meter: what the next question would send, counted
+# by the tokenizer that will judge it.
+router.add_api_route(
+    "/{graph_id}/context-size",
+    context_size.context_size,
+    methods=["POST"],
+    dependencies=[Depends(limit_context_size)],
 )
 
 # The stream's own credential: minted here on an authenticated request, then
