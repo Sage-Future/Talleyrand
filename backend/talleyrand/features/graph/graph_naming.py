@@ -9,18 +9,13 @@ from pydantic import BaseModel
 
 from talleyrand.core.llm import parse_structured
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
-from talleyrand.features.auth_jwt import router as auth_app
-from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.models import (
     GraphDataRepository,
     get_graph_repo,
 )
+from talleyrand.infra.local_user import current_user
 from talleyrand.models.user import User
 
-NAMING_MODEL = "gpt-5.6-luna"
-# Naming a case is a one-line extraction, so it runs on the cheapest model with
-# reasoning switched off. Left unset, GPT-5.6 would reason at medium by default.
-NAMING_REASONING_EFFORT = "none"
 # The opening of each answer is plenty to name a case by; the cut is made in
 # the database so the answers never travel whole.
 ANSWER_PREVIEW_CHARS = 500
@@ -70,8 +65,7 @@ def _build_naming_context(questions: list[tuple[str, str]]) -> str:
 
 async def generate_name(
     graph_id: str,
-    openai_api_key: Annotated[str, Depends(get_openai_api_key)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
 ):
     """Endpoint to generate a name for a graph based on its content."""
@@ -91,12 +85,9 @@ Generate a descriptive name that captures the main topic or theme of this case."
 
     parsed = await parse_structured(
         caller="graph_naming",
-        model=NAMING_MODEL,
-        api_key=openai_api_key,
         system_prompt=INSTRUCTIONS,
         user_content=user_content,
         schema=GraphNameSchema,
-        reasoning_effort=NAMING_REASONING_EFFORT,
     )
 
     return parsed.model_dump(by_alias=True, mode="json")

@@ -4,13 +4,11 @@
 
 Research means dozens of open questions, and it's easy to lose the thread. A linear chat only grows — you end up scrolling back and forth to find what you already worked out. Talleyrand keeps every question in one tree, answers each with the whole case in context, and always shows you the next question worth asking. The longer a case runs, the better it understands what you're after.
 
-Free and open source. You bring your own model API key.
-
-**[Try it at talleyrand.app](https://talleyrand.app)** — or read a real case first: [compute governance](https://talleyrand.app/shared/demo-compute-governance) · [moral progress](https://talleyrand.app/shared/demo-moral-progress) · [the Big Five](https://talleyrand.app/shared/demo-big-five) · [free will](https://talleyrand.app/shared/demo-free-will)
+Free and open source. It runs on your own machine, and every model call goes through your own signed-in Claude Code or Hermes, on your Claude or ChatGPT subscription. No accounts, no API keys.
 
 ## How it works
 
-**Start from a mess, not a blank page.** Type or dictate a stream of thoughts — what you know, what you want to know, notes, doubts, half-formed hunches. Talleyrand turns it into a short brief and your first questions.
+**Start from a mess, not a blank page.** Type a stream of thoughts — what you know, what you want to know, notes, doubts, half-formed hunches. Talleyrand turns it into a short brief and your first questions.
 
 **Branch a follow-up from any sentence.** See something worth digging into? Select it and ask. The new question is filed under the one it came from.
 
@@ -18,172 +16,41 @@ Free and open source. You bring your own model API key.
 
 **It proposes what's next, and learns from you.** After each answer it suggests follow-ups, plus big-picture questions that challenge your framing. Accept them, or decline and say why. Every heart, highlight, and decline sharpens what it proposes next.
 
-Also in the box: insight highlights that feed later answers, cross-links between questions, a choice of GPT and Claude models at any thinking level, attached documents for a case or a single question, one-click Markdown reports, read-only share links others can copy and continue, dictation, and server-side generation so closing the tab never loses work in flight.
+Also in the box: insight highlights that feed later answers, cross-links between questions, a choice of Claude and GPT models for each question, attached documents for a case or a single question, one-click Markdown reports, and server-side generation so closing the tab never loses work in flight.
 
-## What you need to use it
+## Run it
 
-- A Google account (sign-in is Google OAuth only).
-- **An OpenAI API key — required.** It powers the kickstart, suggestions, reports, and summaries.
-- An Anthropic API key — optional, for answering with Claude models.
+Every model call runs on your own signed-in agent CLI, drawing on your plan's usage limits. Two are supported:
 
-Keys are entered in the app's Settings, kept in your browser, and sent with each request. They are never stored on the server, so a self-hosted instance needs no model API keys of its own.
+- [Claude Code](https://claude.com/claude-code), on your Claude plan: sign in with `claude auth login`.
+- [Hermes](https://hermes-agent.nousresearch.com), by default on your ChatGPT plan through its `openai-codex` provider: sign in with `hermes setup`.
 
-## Run it locally
-
-**You need:** Docker Desktop (or Docker Engine + Compose v2), and a Google Cloud account to create OAuth credentials. The app will not start without Google OAuth configured — sign-in is the only way in.
-
-**1. Clone the repository.**
+**You also need:** a Docker runtime (Docker Desktop, OrbStack, …), [pnpm](https://pnpm.io), and [uv](https://docs.astral.sh/uv/) (or pdm).
 
 ```bash
-git clone https://github.com/Sage-Future/Talleyrand.git && cd Talleyrand
+./start-local.sh                        # Claude Code
+AGENT_BACKEND=hermes ./start-local.sh   # Hermes
 ```
 
-**2. Create the `.env` file.** The next steps fill it in.
+It starts MongoDB in Docker and the backend and frontend on this machine, then opens [http://localhost:3000](http://localhost:3000). The agent you start with runs the kickstart, suggestions, summaries, reports and naming, and is the default for answers; the model picker lets any question be answered by either agent, on any model its plan offers. Ctrl-C stops the session; MongoDB keeps running (`docker compose stop mongodb` stops it).
 
-```bash
-cp backend/.env.example backend/.env
-```
+What to know:
 
-**3. Generate a `JWT_SECRET_KEY`** and put it in `backend/.env`. It must be at least 32 characters; the server refuses to start otherwise.
-
-```bash
-openssl rand -hex 32
-```
-
-**4. Set up Google OAuth.**
-
-- Open the [Google Cloud Console](https://console.cloud.google.com/) and select or create a project.
-- Go to **APIs & Services → Credentials**.
-- Pick an existing OAuth 2.0 Client ID, or create one: **+ Create credentials → OAuth client ID**, application type **Web application**.
-- Under **Authorized redirect URIs**, add exactly:
-  ```
-  http://localhost:8000/backend/oauth/google/callback
-  ```
-- Save, then copy the client ID and secret into `backend/.env`:
-  ```
-  GOOGLE_CLIENT_ID=<your client id>
-  GOOGLE_CLIENT_SECRET=<your client secret>
-  GOOGLE_REDIRECT_URI=http://localhost:8000/backend/oauth/google/callback
-  ```
-
-You do **not** need to fill in "Authorized JavaScript origins" — sign-in is a server-side redirect, so Google never checks one.
-
-**5. Start everything.**
-
-```bash
-docker compose up
-```
-
-Or, to skip the MongoDB logs:
-
-```bash
-docker compose up -d
-docker compose logs -f backend frontend
-```
-
-**6. Open [http://localhost:3000](http://localhost:3000)** and sign in. The frontend runs on :3000, the backend on :8000, and MongoDB on :27017. The four demo cases above are seeded automatically on first start.
-
-**7. Add your OpenAI API key** in the app's Settings, and you're ready to open a case.
-
-To stop: `docker compose down`. To wipe the local database as well: `docker compose down -v`.
-
-**If something goes wrong:** the backend restarts on a loop if its configuration is invalid, and the symptom is a sign-in button that does nothing. Run `docker compose logs backend` — a missing or malformed value is reported by name at the very end. After editing `backend/.env`, recreate the container rather than restarting it; `docker compose restart` does not re-read the file:
-
-```bash
-docker compose up -d --force-recreate backend
-```
-
-## Deploy
-
-A deployment is three pieces: a MongoDB database, the backend as a web service, and the frontend as a static site. The instructions below are for [Render](https://render.com), which is what talleyrand.app runs on, but nothing here is Render-specific.
-
-Pick the two public URLs up front — one for the site, one for the API (for example `https://example.com` and `https://api.example.com`). Several settings reference each other, and the frontend must be rebuilt if the API URL changes.
-
-### 1. Database
-
-Render does not offer MongoDB. Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/atlas) (or host your own), allow network access from your backend, and keep the connection string for `MONGODB_URL`.
-
-### 2. Backend — Render Web Service
-
-| Setting | Value |
-| --- | --- |
-| Root Directory | `backend` |
-| Build Command | `pip install pdm==2.29.0 && pdm install --prod --frozen --no-editable` |
-| Start Command | `pdm run start` |
-
-Setting the root directory is required — without it the build commands run at the repository root and fail.
-
-Environment variables:
-
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `PYTHON_VERSION` | yes | Must match `backend/.python-version` exactly (`3.13.11`). Render's default depends on when the service was created, and this variable takes precedence over the file. |
-| `JWT_SECRET_KEY` | yes | A fresh `openssl rand -hex 32`, not the one from your laptop. Min 32 characters. |
-| `GOOGLE_CLIENT_ID` | yes | From Google Cloud. |
-| `GOOGLE_CLIENT_SECRET` | yes | From Google Cloud. |
-| `GOOGLE_REDIRECT_URI` | yes | `https://api.example.com/backend/oauth/google/callback` — the **API** host, not the site host. |
-| `AUTH_FAILURE_REDIRECT` | yes | `https://example.com/auth/failure`. Defaults to `localhost:3000`, so a failed login on a live site sends users nowhere useful if you skip this. |
-| `CORS_ORIGINS` | yes | `["https://example.com"]`. This is also the allowlist of hosts users may be returned to after signing in, so the site origin must be here or login will fail. |
-| `MONGODB_URL` | yes | Your Atlas connection string. |
-| `MONGODB_DATABASE` | no | Defaults to `talleyrand`. |
-| `EMAIL_WHITELIST_ENABLED` | no | See "Who can sign in" below. |
-| `EMAIL_WHITELIST` | no | JSON list, e.g. `["you@example.com"]`. |
-| `LOGGING_LEVEL` | no | Defaults to `INFO`. |
-
-In a dashboard, enter list values without shell quotes: `["https://example.com"]`, not `'["https://example.com"]'`.
-
-### 3. Frontend — Render Static Site
-
-| Setting | Value |
-| --- | --- |
-| Root Directory | `frontend` |
-| Build Command | `pnpm install --frozen-lockfile; pnpm run build` |
-| Publish Directory | `dist` |
-
-Environment variables — these are read **at build time**, so changing them requires a rebuild:
-
-| Variable | Value |
-| --- | --- |
-| `NODE_VERSION` | Must match `frontend/.node-version` exactly (`22.21.1`). Render's default depends on when the service was created, and this variable takes precedence over the file. |
-| `VITE_BACKEND_URL` | `api.example.com` — the API host, with no protocol and no trailing slash. |
-| `VITE_IS_SECURE` | `true` |
-
-Without these the built site calls `localhost:8000` and nothing works.
-
-Then add a **rewrite rule**, or every link other than the home page will 404 — including the share links you send people:
-
-| Source | Destination | Action |
-| --- | --- | --- |
-| `/*` | `/index.html` | Rewrite |
-
-### 4. Google OAuth for production
-
-In the same Google Cloud project, add your production callback to **Authorized redirect URIs**:
-
-```
-https://api.example.com/backend/oauth/google/callback
-```
-
-Then publish the OAuth consent screen (**APIs & Services → OAuth consent screen**). While it is in *Testing*, only accounts you have explicitly added as test users can sign in — everyone else sees an access-denied error.
-
-### 5. Who can sign in
-
-By default, **anyone with a Google account can sign in to your instance** and start using your database. For a private deployment, restrict it:
-
-```
-EMAIL_WHITELIST_ENABLED=true
-EMAIL_WHITELIST=["you@example.com","colleague@example.com"]
-```
-
-Each user still pays for their own model usage with their own API key, but they do use your database and your bandwidth.
+- **Local only.** There is no sign-in, so the backend accepts only connections from this machine, and refuses state-changing requests that a browser marks as coming from another website. Both servers and MongoDB listen on 127.0.0.1 only. Never run it on a server, and don't use it on a machine other people have accounts on: any local account can reach it.
+- **Every call counts against your plan**, including the kickstart, suggestions, summaries and naming, not just answers. At most two run at once (`AGENT_CONCURRENCY`).
+- **Models:** each answer runs the model its question picks: Claude Haiku 4.5, Sonnet 5.5, Opus 5.5 or Fable 5.1 on Claude Code, or GPT-6 Luna, Sol, 6.1 Sol or Astra on Hermes. The agent's own work (kickstart, suggestions, summaries, reports, naming) runs `sonnet` on Claude Code and `gpt-6-astra` on Hermes. Both agents run at medium effort. Change the model with `CLAUDE_CODE_MODEL` and `HERMES_MODEL`, the effort with `CLAUDE_CODE_EFFORT` and `HERMES_REASONING`, and Hermes's provider (`openai-codex` by default) with `HERMES_PROVIDER`, in `backend/.env`.
+- **PDFs** are read as their text, extracted on this machine (up to 300 pages and about 50K tokens each). Scanned, password-protected or damaged PDFs can't be read; answers say so at the top.
+- **Web search** runs through the [Kagi Search API](https://help.kagi.com/kagi/api/search.html) or [Mixedbread's web store](https://www.mixedbread.com/docs/stores/search/web-store), with your own key: put `KAGI_API_KEY=...` and/or `MIXEDBREAD_API_KEY=...` in `backend/.env`, and pick one under **Search with** in Settings (Kagi by default). Each provider bills its searches. With search on, the answering agent first writes up to three queries (one small extra call on your plan), Talleyrand runs them on the chosen provider and hands the agent the results, and the answer's sources list every result, with the ones it links marked cited. Without the chosen provider's key, answers say at the top that search didn't run; turn search off in Settings to drop the note.
+- **Billing:** Claude Code runs get no API keys, `./start-local.sh` refuses to start unless Claude Code is signed in with a subscription, and a run that still reports API-key billing is killed the moment it says so. That last check is a fast stop, not a guarantee. Hermes offers no such check: it uses whatever its own configuration provides, and it loads the API keys in `~/.hermes/.env` for its own side calls (Hermes also titles each run with an extra small model call).
+- **Transcripts:** Claude Code runs keep no session. Hermes keeps its runs in its own session store, out of your session lists, and writes a failed request, prompt included, to `~/.hermes/sessions`.
+- **Cases from a hosted Talleyrand** belong to the email you signed in with there. Set `LOCAL_USER_EMAIL` to that address in `backend/.env` to open them from the same database. Answers written by a GPT or Claude API model reopen on the matching model here.
 
 ## Development
 
 ### Backend
 
 1. Install [PDM](https://pdm-project.org/en/latest/#installation), then the exact Python named in
-   `backend/.python-version` — `pdm python install cpython@3.13.11`. The Docker image and the deployed
-   service run that same version, down to the patch. Other versions are untested.
+   `backend/.python-version` — `pdm python install cpython@3.13.11`. Other versions are untested.
 
    Avoid `pdm use`: it rewrites `.python-version` to the major.minor only, which silently drops the
    patch pin and lets a later environment be built on a different 3.13.x.
@@ -195,7 +62,7 @@ Each user still pays for their own model usage with their own API key, but they 
    ```
 
 Re-run `pdm install` whenever the dependencies in `pyproject.toml` or `pdm.lock` change — an environment
-built from an older lock will pass tests that fail in Docker and in production.
+built from an older lock can pass tests that fail on a fresh install.
 
 Lint, format, and test:
 
@@ -231,14 +98,13 @@ pnpm build         # type-check and build; use this instead of pnpm start to ver
 pnpm format:check
 ```
 
-When the backend API changes, regenerate the typed client with `pnpm generate-openapi` (the backend must be running).
+When the backend API changes, regenerate the typed client with `pnpm generate-openapi` (with `./start-local.sh` running).
 
 ## Known rough edges
 
-- Every toolchain version is pinned to one exact release: Python and Node in `.python-version` / `.node-version` and in the two `dev.Dockerfile`s, pdm and pnpm in those same images, and `PYTHON_VERSION` / `NODE_VERSION` on each deployed service. A version bump means changing all of them together, or the environments quietly diverge again.
-- The Node version is written twice — `frontend/.node-version` for Render and `frontend/.nvmrc` for nvm, which does not read the former. They must hold the same value.
-- `docker-compose.yml` deliberately tracks `mongo:8.0` rather than an exact patch. Production is MongoDB Atlas, which applies 8.0 patches on its own schedule, so a floating local tag stays closer to production than a frozen one would.
-- Nothing runs the test suite automatically. There is no CI, and the deploy build command does not run `pdm test`, so a broken test only shows up when someone runs it by hand.
+- Every toolchain version is pinned to one exact release: Python and Node in `.python-version` / `.node-version`, pdm in `start-local.sh`, pnpm in `package.json`. A version bump means changing all of them together.
+- The Node version is written twice — `frontend/.node-version` and `frontend/.nvmrc` for nvm, which does not read the former. They must hold the same value.
+- Nothing runs the test suite automatically. There is no CI, so a broken test only shows up when someone runs it by hand.
 - The frontend bundle is shipped as a single chunk and is larger than it needs to be.
 
 ## License

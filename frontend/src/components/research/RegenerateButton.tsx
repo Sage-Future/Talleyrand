@@ -76,7 +76,7 @@ export const RegenerateButton: FC<{ nodeId: string }> = ({ nodeId }) => {
         {answeredLabel}
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-30 mb-1.5 w-64 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
+        <div className="absolute bottom-full left-0 z-30 mb-1.5 w-80 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
           <div className="border-b border-stone-100 bg-stone-50 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-stone-400">
             Regenerate with
           </div>

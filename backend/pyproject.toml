@@ -6,14 +6,12 @@ authors = [{ name = "Talleyrand Team" }]
 dependencies = [
     "fastapi==0.118.0",
     "uvicorn[standard]==0.37.0",
-    "PyJWT>=2.8.0",
     "httpx==0.28.1",
     "pydantic[email]>=2.12.2",
     "pydantic-settings==2.11.0",
     "pymongo[srv]>=4.15.3",
-    "openai>=2.6.1",
     "tiktoken>=0.8.0",
-    "anthropic>=0.109.1",
+    "pypdf==6.19.0",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -27,8 +25,8 @@ build-backend = "pdm.backend"
 distribution = false
 
 [tool.pdm.scripts]
-dev = "uvicorn talleyrand.main:app --reload --host 0.0.0.0 --port 8000"
-start = "uvicorn talleyrand.main:app --host 0.0.0.0 --port 8000"
+# There is no sign-in, so the server must never listen beyond this machine.
+local = "uvicorn talleyrand.main:app --host 127.0.0.1 --port 8000"
 lint = "ruff check ."
 format = "ruff format ."
 test = "pytest --show-capture=all"

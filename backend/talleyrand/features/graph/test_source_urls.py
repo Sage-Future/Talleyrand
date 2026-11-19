@@ -1,13 +1,12 @@
 """
 A source URL is a string an attacker can choose. It reaches storage from a
-hand-written JSON import and comes back out of a share link, and the frontend
-turns it into an anchor's href — so a `javascript:` URL parked in an answer's
-source list is a stored XSS on the reader's origin, where their API keys live.
+hand-written JSON import, and the frontend turns it into an anchor's href — so
+a `javascript:` URL parked in an answer's source list is a stored XSS on the
+reader's origin, which can act as the operator.
 
 The frontend refuses to build an href from anything but http(s) (the fix that
 closes the hole); these tests pin the second line of defence, that such a URL
-cannot be stored in the first place — which also holds for a case copied
-straight from a share link, a path that never passes through the frontend.
+cannot be stored in the first place.
 """
 
 import uuid
@@ -72,7 +71,7 @@ def _node_content(source_url: str) -> dict:
 
 def test_a_poisoned_source_sinks_the_whole_answer():
     """No partial acceptance: the answer carrying the URL fails to parse, so
-    neither a save nor a share-copy can smuggle one past the API boundary."""
+    neither a save nor an import can smuggle one past the API boundary."""
     with pytest.raises(ValidationError):
         NodeContentDTO.model_validate(_node_content("javascript:alert(1)"))
 

@@ -19,7 +19,6 @@ async def fit_research_context(
     context: ResearchContext,
     *,
     model: ModelWindow,
-    api_key: str,
     system_prompt: str,
     head: str = "",
     tail: str = "",
@@ -33,7 +32,6 @@ async def fit_research_context(
     """
     documents = await fit_to_context(
         model=model,
-        api_key=api_key,
         system_prompt=system_prompt,
         keep_before=head + context.brief,
         trimmable=context.documents,

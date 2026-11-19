@@ -8,7 +8,6 @@ from uuid import uuid4
 from fastapi import Depends, HTTPException, Response, status
 from pydantic_core import to_json
 
-from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dtos import (
     GraphMetadataDTO,
     ImportGraphDTO,
@@ -35,6 +34,7 @@ from talleyrand.features.research.generation.records import (
     GenerationJobRepository,
     get_job_repo,
 )
+from talleyrand.infra.local_user import current_user
 from talleyrand.models.user import User
 
 
@@ -54,7 +54,7 @@ async def save(
     payload: Annotated[SaveGraphDataDTO, Depends(get_save_graph_data_dto)],
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
     job_repo: Annotated[GenerationJobRepository, Depends(get_job_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Save the autosaved working graph for the current user.
@@ -115,7 +115,7 @@ async def get(
     graph_id: str,
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
     job_repo: Annotated[GenerationJobRepository, Depends(get_job_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Get graph data by ID, with unacknowledged generation results folded in.
@@ -150,7 +150,7 @@ async def get(
 
 async def get_all_metadata(
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Get metadata for all graphs for user (lightweight listing).
@@ -168,7 +168,7 @@ async def delete(
     graph_id: str,
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
     job_repo: Annotated[GenerationJobRepository, Depends(get_job_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Delete graph by ID, along with its generation jobs.
@@ -186,7 +186,7 @@ async def delete(
 
 async def create_new(
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Create a new empty graph for the current user.
@@ -210,7 +210,7 @@ async def create_new(
 async def import_case(
     payload: ImportGraphDTO,
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Create a case from an uploaded export file.
@@ -233,7 +233,7 @@ async def rename(
     graph_id: str,
     payload: RenameGraphDTO,
     repo: Annotated[GraphDataRepository, Depends(get_graph_repo)],
-    user: Annotated[User, Depends(auth_app.require_auth)],
+    user: Annotated[User, Depends(current_user)],
 ):
     """
     Rename a graph by ID.

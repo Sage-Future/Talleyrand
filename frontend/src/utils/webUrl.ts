@@ -1,8 +1,8 @@
 /**
  * The parsed URL, but only for the schemes a link built from case data may use.
  *
- * Case data is untrusted. A case arrives from a share link or from a
- * hand-written JSON import, so a source URL can say anything — `javascript:`
+ * Case data is untrusted. A case can arrive from a hand-written JSON
+ * import, so a source URL can say anything — `javascript:`
  * included — and React renders an href verbatim. Links inside answer text are
  * safe only because react-markdown sanitizes them; anything that builds an
  * href itself has to come through here and fall back to plain text on null.

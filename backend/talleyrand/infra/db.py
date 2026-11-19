@@ -32,7 +32,7 @@ async def lifespan_db() -> AsyncIterator[tuple[AsyncMongoClient[Any], AsyncDatab
 
     # Shutdown
     if _mongo_client:
-        _mongo_client.close()
+        await _mongo_client.close()
     _mongo_client = None
     _mongo_db = None
 

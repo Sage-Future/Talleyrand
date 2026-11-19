@@ -1,15 +1,16 @@
 import type { components } from '../api/schema';
 import {
   client,
-  createJobStreamUrl,
+  getSearchProvider,
   getVerbosity,
+  jobStreamUrl,
   isParentSummaryEnabled,
   isWebSearchEnabled,
 } from '../client';
 import { useGraphStructureStore } from '../stores/graphStructureStore';
 import { useNodeContentStore } from '../stores/nodeContentStore';
 import { useResearchStore } from '../stores/researchStore';
-import type { ModelType, ResearchSuggestion, WebSource } from '../types';
+import type { Execution, ModelType, ResearchSuggestion, WebSource } from '../types';
 import { queueJobAck, saveNow } from './autosaveSubscriptions';
 import { researchSuggestionService } from './researchSuggestionService';
 
@@ -30,6 +31,7 @@ type JobStreamEvent =
       answeredAt: string;
       sources: WebSource[];
       sourcesFound: number;
+      execution: Execution | null;
     }
   | {
       type: 'job_error';
@@ -173,6 +175,7 @@ class ResearchGenerationService {
       selections: [],
       sources: [],
       sourcesFound: 0,
+      execution: null,
     });
     this.ask(nodeId, { background: false });
   }
@@ -222,6 +225,7 @@ class ResearchGenerationService {
           background,
           force,
           webSearchEnabled: isWebSearchEnabled(),
+          searchProvider: getSearchProvider(),
           verbosity: getVerbosity(),
           cheatSheet: isParentSummaryEnabled(),
         },
@@ -278,6 +282,7 @@ class ResearchGenerationService {
           job.answeredAt ?? null,
           job.sources,
           job.sourcesFound,
+          job.execution ?? null,
           { liveCompletion }
         );
         break;
@@ -294,6 +299,7 @@ class ResearchGenerationService {
     answeredAt: string | null,
     sources: WebSource[],
     sourcesFound: number,
+    execution: Execution | null,
     { liveCompletion }: { liveCompletion: boolean }
   ): void {
     const contentStore = useNodeContentStore.getState();
@@ -303,11 +309,12 @@ class ResearchGenerationService {
     if (responseChanged) {
       contentStore.setNodeResponse(nodeId, answer);
     }
-    // Sources belong to this answer: a regeneration replaces them wholesale.
+    // Sources and execution belong to this answer: a regeneration replaces them wholesale.
     contentStore.setNodeContent(nodeId, {
       answeredAt: answeredAt ?? undefined,
       sources,
       sourcesFound,
+      execution,
     });
     research.setJob(nodeId, null);
     research.clearStreamText(nodeId);
@@ -379,24 +386,9 @@ class ResearchGenerationService {
   }
 
   /** Resolves once the replayed job state has been applied (or the socket closed). */
-  private async connect(graphId: string, gen: number): Promise<void> {
-    // Each connection is opened with its own freshly minted ticket; an
-    // expired session surfaces here as a 401, which the HTTP layer turns
-    // into a refresh or the re-login flow.
-    let url: string | null;
-    try {
-      url = await createJobStreamUrl(graphId);
-    } catch (err) {
-      if (gen !== this.generation) return;
-      console.error('Failed to open the live answer stream:', err);
-      this.reconnectLater(graphId, gen);
-      return;
-    }
-    if (gen !== this.generation) return;
-    if (url === null) return; // case deleted, or the session is over
-
+  private connect(graphId: string, gen: number): Promise<void> {
     return new Promise(resolve => {
-      const ws = new WebSocket(url);
+      const ws = new WebSocket(jobStreamUrl(graphId));
       this.ws = ws;
       // Terminal events before the 'synced' marker replay history; only
       // completions after it were watched live (and count as read).
@@ -420,8 +412,6 @@ class ResearchGenerationService {
         if (closeEvent.code === 4004) {
           return; // graph deleted; no stream to reconnect to
         }
-        // 4001 (the ticket expired in flight) is a reconnect like any other:
-        // minting the next ticket is what decides whether the session lives.
         this.reconnectLater(graphId, gen);
       };
     });
@@ -462,6 +452,7 @@ class ResearchGenerationService {
           event.answeredAt,
           event.sources,
           event.sourcesFound,
+          event.execution,
           { liveCompletion: live }
         );
         break;

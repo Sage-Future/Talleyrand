@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from talleyrand.features.graph.dtos import (
+    ExecutionDTO,
     NodeContentDTO,
     NodeDTO,
     ResearchSuggestionDTO,
@@ -173,6 +174,19 @@ class TestReadOverlay:
         apply_read_overlay(graph([content]), [record], {record.id})
         assert content.sources == []
         assert content.sources_found == 0
+
+    def test_folds_how_the_answer_was_produced_and_drops_it_on_reopen(self):
+        content = make_content(NODE)
+        record = answer_record(NODE, "done", "the answer")
+        record.execution = ExecutionDTO(provider="hermes", model="gpt-6-astra", notes=["n"])
+        apply_read_overlay(graph([content]), [record], set())
+        assert content.execution == record.execution
+
+        reopened = make_content(NODE, response="")
+        reopened.execution = record.execution
+        running = answer_record(NODE, "running")
+        apply_read_overlay(graph([reopened]), [running], {running.id})
+        assert reopened.execution is None
 
     def test_done_record_does_not_override_differing_doc_content(self):
         content = make_content(NODE, response="newer canvas answer")
@@ -385,6 +399,7 @@ class TestRecordEvent:
             "answeredAt": NOW.isoformat(),
             "sources": [],
             "sourcesFound": 0,
+            "execution": None,
         }
 
     def test_done_answer_replays_the_sources_it_recorded(self):

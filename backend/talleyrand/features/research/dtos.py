@@ -47,8 +47,8 @@ class ContextSizeResponseDTO(BaseSchema):
 
     tokens: int
     max_input_tokens: int
-    # True when tiktoken stood in for Anthropic's counter (no Anthropic key
-    # was sent, or the count failed); the real request may count differently.
+    # True when the count is tiktoken's estimate (always, for the agent CLIs);
+    # the real request may count differently.
     estimated: bool
 
 

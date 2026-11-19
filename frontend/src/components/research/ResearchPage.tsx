@@ -102,12 +102,6 @@ export const ResearchPage: FC = () => {
   }, [graphId, navigate]);
 
   useEffect(() => {
-    // API-key gate: suggestions, kickstarts and reports all run on OpenAI,
-    // so the app is unusable without that key specifically
-    if (!localStorage.getItem('openai_api_key')) {
-      setShowSettingsModal(true);
-    }
-
     // The graph selector is "usually hidden" in the research view
     setShowSidebar(false);
 

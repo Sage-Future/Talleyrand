@@ -55,10 +55,6 @@ export interface GraphMetadata {
   nodeCount: number;
   edgeCount: number;
   createdAt?: string;
-  /** True while anyone holding the case's link can read it. */
-  shared: boolean;
-  /** Names of the case files a share link hands out along with the case. */
-  documentNames: string[];
 }
 
 export type DeclineReason = 'know_this' | 'too_basic' | 'off_topic' | 'unclear';
@@ -117,6 +113,15 @@ export interface WebSource {
   cited: boolean;
 }
 
+// How an agent CLI answer was produced (local sessions): the provider, the
+// model it reported, and notes on what it could not use (web search, unreadable
+// PDFs). Shown beside the answer, never part of it. Absent on API-key answers.
+export interface Execution {
+  provider: string;
+  model?: string | null;
+  notes: string[];
+}
+
 // Node content (business data)
 export interface NodeContent {
   id: string;
@@ -159,6 +164,9 @@ export interface NodeContent {
   // How many pages the searches surfaced in total — more than the list above
   // when the haul was too big to keep whole.
   sourcesFound: number;
+
+  // How the answer was produced, for agent CLI answers. Replaced with the answer.
+  execution?: Execution | null;
 
   // Research view metadata (informational, never load-bearing)
   answeredAt?: string | null;

@@ -1,51 +1,28 @@
 """
-LLM access shared by every feature.
+LLM access shared by every feature, all of it on the operator's own signed-in
+agent CLI (core/claude_code.py, core/hermes.py) and its subscription.
 
-stream_text dispatches streaming chat queries to OpenAI (Responses API) or
-Anthropic (Messages API) based on the selected model's provider; it is used by
-the node-query services. It yields the answer as TextChunks interleaved with
-the SourceChunks describing what its web searches turned up. parse_structured
-is the one-shot structured-output call (OpenAI-only) used by kickstart, the
-suggesters, reports, and auto-naming.
+stream_text answers a research question on the agent and model its preset
+names; it is used by the node-query services. It returns the answer as a
+TextChunk with the SourceChunks of what its web search turned up and an
+ExecutionChunk saying how it was produced. parse_structured is the one-shot
+structured-output call used by kickstart, the suggesters, reports, and
+auto-naming, on settings.agent_backend.
 """
 
 import asyncio
 import logging
-from collections.abc import AsyncGenerator, AsyncIterable
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import Any, Literal
-from urllib.parse import urlparse
+from typing import Literal
 
-import httpx
-from anthropic import APIError as AnthropicAPIError
-from anthropic import AsyncAnthropic
-from anthropic.types import (
-    CitationsWebSearchResultLocation,
-    MessageDeltaUsage,
-    RawMessageStreamEvent,
-    WebSearchToolResultBlock,
-)
-from anthropic.types.beta import (
-    BetaFallbackMessageIterationUsage,
-    BetaMessageDeltaUsage,
-    BetaRawMessageStreamEvent,
-)
-from openai import APIError as OpenAIAPIError
-from openai import AsyncOpenAI, OpenAIError, omit
-from openai.types.responses import (
-    ResponseOutputItem,
-    ResponseOutputRefusal,
-    ResponseOutputText,
-)
 from pydantic import BaseModel
 
+from talleyrand.core import claude_code, hermes, web_search
+from talleyrand.core.agent_cli import AgentError
+from talleyrand.core.config import settings
 from talleyrand.core.llm_logging import log_response, log_structured_response
-from talleyrand.core.model_settings import (
-    ANTHROPIC_MAX_OUTPUT_TOKENS,
-    ModelConfig,
-    ModelWindow,
-    Provider,
-)
+from talleyrand.core.model_settings import ModelConfig, ModelWindow, Provider
 from talleyrand.core.token_counter import count_tokens
 
 logger = logging.getLogger(__name__)
@@ -62,85 +39,33 @@ TRIMMED_NOTICE = (
     "this model's context window ...]\n\n"
 )
 
-# Anthropic has no verbosity parameter; low verbosity is requested via the system prompt.
-ANTHROPIC_CONCISE_INSTRUCTION = (
-    "\n\nKeep your response concise and focused — avoid unnecessary elaboration."
-)
+# Neither CLI takes a verbosity setting; low verbosity is asked for in the prompt.
+CONCISE_INSTRUCTION = "\n\nKeep your response concise and focused — avoid unnecessary elaboration."
 
-# Claude tends to emit external links as bare or backtick-wrapped URLs; OpenAI
-# models default to Markdown links. Request Markdown explicitly so links render
-# as clickable chips. The [[1.2]] cross-link tokens are separate and unaffected.
-ANTHROPIC_MARKDOWN_LINK_INSTRUCTION = (
+# Request Markdown links explicitly so links render as clickable chips. The
+# [[1.2]] cross-link tokens are separate and unaffected.
+MARKDOWN_LINK_INSTRUCTION = (
     "\n\nWrite every external link as a Markdown link — [descriptive text](https://example.com) — "
     "never as a bare URL or a URL wrapped in backticks/inline code. "
     "This does not apply to the [[1.2]] cross-link tokens, which must stay exactly as written."
 )
 
-# Claude Fable 5.1 reaches for metaphor and flourish where a literal phrase
-# would do. Enabled per model via ModelConfig.plain_prose.
-ANTHROPIC_PLAIN_PROSE_INSTRUCTION = (
-    "\n\nMannered prose substitutes metaphor and flourish for direct statement. "
-    'Instead of "a parameter worth varying," the mannered writer produces '
-    '"a dial worth turning." Instead of "this point still matters," they write '
-    '"this point earns its keep." The phrases exist to display the writer, not to '
-    "convey the idea, and readers can tell. That is why mannered prose irritates: it "
-    "makes the reader work harder so the writer can perform. It is also imprecise. "
-    "Metaphors drag in connotations the writer did not choose and cannot control. "
-    "The fix is to say what you mean. When a literal phrase is available, use it."
-)
-
-# Claude Fable 5.1's safety classifiers can decline a request outright, which would
-# otherwise reach the reader as a blank answer. Anthropic can re-run the refused
-# request on a stand-in model inside the same call; enabled per model via
-# ModelConfig.refusal_fallback and announced in the answer so the reader always
-# knows which model actually wrote it.
-ANTHROPIC_REFUSAL_FALLBACK_BETA = "server-side-fallback-2026-06-01"
-ANTHROPIC_REFUSAL_FALLBACK_MODEL = "claude-opus-4-8"
-
-PROVIDER_LABELS: dict[Provider, str] = {"openai": "OpenAI", "anthropic": "Anthropic"}
-
-
-class MissingApiKeyError(Exception):
-    """Raised when the selected model's provider has no API key configured."""
-
-    def __init__(self, provider: Provider):
-        self.provider = provider
-        super().__init__(
-            f"No {PROVIDER_LABELS[provider]} API key configured. "
-            "Please add it in settings to use this model."
-        )
-
-
-def resolve_api_key(model: ModelConfig, openai_api_key: str, anthropic_api_key: str) -> str:
-    """Pick the API key matching the model's provider."""
-    api_key = openai_api_key if model.provider == "openai" else anthropic_api_key
-    if not api_key:
-        raise MissingApiKeyError(model.provider)
-    return api_key
+PROVIDER_LABELS: dict[Provider, str] = {
+    "claude_code": "Claude Code",
+    "hermes": "Hermes",
+}
 
 
 def provider_error_detail(exc: Exception) -> str | None:
     """
-    Human-readable message from a provider SDK error, or None for other exceptions.
+    Human-readable message from an agent CLI error, or None for other exceptions.
 
-    Lets the UI show the provider's own explanation (billing, rate limits, overload)
+    Lets the UI show the agent's own explanation (usage limits, sign-in)
     instead of a generic failure message.
     """
-    if isinstance(exc, OpenAIAPIError):
-        provider_label = PROVIDER_LABELS["openai"]
-    elif isinstance(exc, AnthropicAPIError):
-        provider_label = PROVIDER_LABELS["anthropic"]
-    else:
-        return None
-
-    # Anthropic bodies look like {"error": {"message": ...}}; OpenAI bodies are
-    # already unwrapped to the inner error object. Non-JSON bodies (e.g. proxy
-    # HTML) have no extractable message — use the SDK-formatted one.
-    body = exc.body
-    error = body.get("error", body) if isinstance(body, dict) else None
-    if isinstance(error, dict) and isinstance(error.get("message"), str):
-        return f"{provider_label}: {error['message']}"
-    return f"{provider_label}: {exc.message}"
+    if isinstance(exc, AgentError):
+        return f"{exc.label}: {exc}"
+    return None
 
 
 class StructuredGenerationError(Exception):
@@ -156,44 +81,56 @@ class StructuredGenerationError(Exception):
 async def parse_structured[SchemaT: BaseModel](
     *,
     caller: str,
-    model: str,
-    api_key: str,
     system_prompt: str,
-    user_content: str | list[dict],
+    user_content: str,
     schema: type[SchemaT],
-    reasoning_effort: str | None = None,
-    web_search_enabled: bool = False,
 ) -> SchemaT:
     """
-    One-shot structured-output call, shared by every non-streaming feature.
+    One-shot structured-output call, shared by every non-streaming feature, on
+    settings.agent_backend.
 
-    Logs the prompt and the parsed response, and normalizes both failure modes
-    (provider error, output the schema could not be parsed from) to
-    StructuredGenerationError. user_content is either a plain string or
-    Responses-API content parts (input_text + input_file) when PDFs are attached.
+    Logs the parsed response, and normalizes both failure modes (agent error,
+    output the schema could not be parsed from) to StructuredGenerationError.
     """
-    client = AsyncOpenAI(api_key=api_key)
+    return await _parse_structured_agent(
+        caller=caller,
+        provider=settings.agent_backend,
+        system_prompt=system_prompt,
+        user_content=user_content,
+        schema=schema,
+    )
+
+
+async def _parse_structured_agent[SchemaT: BaseModel](
+    *,
+    caller: str,
+    provider: Provider,
+    system_prompt: str,
+    user_content: str,
+    schema: type[SchemaT],
+) -> SchemaT:
+    """
+    parse_structured on one agent CLI. Claude Code enforces the schema itself
+    (--json-schema); Hermes is asked for it in the instructions. Either way the
+    result is validated here.
+    """
+    label = PROVIDER_LABELS[provider]
     try:
-        response = await client.responses.parse(
-            model=model,
-            # omit, not None: the SDK's parse() iterates an explicit tools value
-            # (None included) client-side, so None raises before any request.
-            reasoning={"effort": reasoning_effort} if reasoning_effort is not None else omit,
-            input=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            tools=[{"type": "web_search"}] if web_search_enabled else omit,
-            text_format=schema,
-        )
-    except OpenAIError as e:
-        raise StructuredGenerationError(provider_error_detail(e) or str(e)) from e
-
-    if response.output_parsed is None:
-        raise StructuredGenerationError("The model returned no usable output.")
-
-    log_structured_response(caller, response.output_parsed)
-    return response.output_parsed
+        if provider == "hermes":
+            parsed = await hermes.run_structured(
+                system_prompt=system_prompt, prompt=user_content, schema=schema
+            )
+        else:
+            result = await claude_code.run(
+                system_prompt=system_prompt,
+                prompt=user_content,
+                json_schema=schema.model_json_schema(),
+            )
+            parsed = schema.model_validate(result.get("structured_output"))
+    except (AgentError, ValueError) as e:
+        raise StructuredGenerationError(f"{label}: {e}") from e
+    log_structured_response(caller, parsed)
+    return parsed
 
 
 @dataclass
@@ -203,11 +140,6 @@ class PdfAttachment:
     filename: str
     data_uri: str  # data:application/pdf;base64,<payload>
 
-    @property
-    def base64_data(self) -> str:
-        """Bare base64 payload without the data-URI prefix."""
-        return self.data_uri.split(",", 1)[1]
-
 
 @dataclass(frozen=True)
 class WebSource:
@@ -215,9 +147,8 @@ class WebSource:
     One page a web search put in front of the model.
 
     cited marks the few the answer actually draws on; the rest are what the
-    model looked at and passed over. Neither provider reports a title for
-    every source — OpenAI only names the ones it cites — so a missing title
-    is normal and the reader is shown the URL instead.
+    model looked at and passed over. A source may come without a title, in
+    which case the reader is shown the URL instead.
     """
 
     url: str
@@ -240,25 +171,40 @@ class SourceChunk:
     source: WebSource
 
 
-type StreamChunk = TextChunk | SourceChunk
+@dataclass(frozen=True)
+class ExecutionChunk:
+    """
+    How an agent CLI answer was produced, sent once with it: the provider, the
+    model the CLI reported, and notes on what the answer could not use (web
+    search, unreadable PDFs). Kept apart from the answer text, so the notes
+    are shown to the reader but never fed back to a model as part of the case.
+    """
 
-# A single search is enough to blow past any sane list: one OpenAI search
-# returned 39 results in testing, and an answer may run several — ordinary
-# questions do exceed this cap. The sources are saved with the case, so the
-# haul is capped; cited ones sort first, so truncation only ever drops pages
+    provider: str
+    model: str | None
+    notes: tuple[str, ...] = ()
+
+
+type StreamChunk = TextChunk | SourceChunk | ExecutionChunk
+
+# The sources are saved with the case, so the haul is capped; cited ones sort
+# first, so truncation only ever drops pages
 # the answer never used. The full count is reported separately, so a truncated
 # list never under-reports how wide the model actually cast its net.
 MAX_WEB_SOURCES = 60
+
+# Queries an agent answer's web search may run (each billed by the search provider).
+MAX_SEARCH_QUERIES = 3
 
 
 class WebSourceCollector:
     """
     Everything the searches behind one answer turned up, cited or not.
 
-    Providers report finding a page and citing it as separate events, in
-    either order and with different fields known at each point, so reports are
-    folded together by URL: a title or page age lands whenever the provider
-    happens to mention it, and a citation only ever sets the flag.
+    Finding a page and citing it are reported separately, in either order and
+    with different fields known at each point, so reports are folded together
+    by URL: a title or page age lands whenever one is mentioned, and a
+    citation only ever sets the flag.
     """
 
     def __init__(self) -> None:
@@ -287,25 +233,19 @@ class WebSourceCollector:
         return ordered[:MAX_WEB_SOURCES]
 
 
-async def count_prompt_tokens(
-    model: ModelWindow, api_key: str, system_prompt: str, user_prompt: str
-) -> int:
+async def count_prompt_tokens(model: ModelWindow, system_prompt: str, user_prompt: str) -> int:
     """
-    What a request carrying this prompt counts as, by the counter that will
-    judge it: tiktoken for OpenAI models, Anthropic's token-counting endpoint
-    (which needs the API key) for Claude models.
+    What a request carrying this prompt counts as. The agent CLIs have no
+    counter to ask, so tiktoken estimates them against a budget with room for
+    the error.
     """
-    if model.provider == "openai":
-        # tiktoken counting is CPU-bound — keep it off the event loop
-        return await asyncio.to_thread(count_tokens, system_prompt + user_prompt, model.api_model)
-    client = AsyncAnthropic(api_key=api_key)
-    return await _count_anthropic_tokens(client, model, system_prompt, user_prompt)
+    # tiktoken counting is CPU-bound — keep it off the event loop
+    return await asyncio.to_thread(count_tokens, system_prompt + user_prompt)
 
 
 async def fit_to_context(
     *,
     model: ModelWindow,
-    api_key: str,
     system_prompt: str,
     keep_before: str,
     trimmable: str,
@@ -323,16 +263,15 @@ async def fit_to_context(
     leave behind.
 
     A section trimmed to nothing is not an error: the prompt goes out at
-    whatever size remains, and the provider rejects it if it still does not fit.
+    whatever size remains.
 
     reserve_tokens must cover what the request carries beyond the counted
-    prompt: the per-model instructions stream_text appends to the system
-    prompt (concise, Markdown links, plain prose) come to a couple of hundred
-    tokens at most.
+    prompt: the instructions stream_text appends to the system prompt
+    (concise, Markdown links) come to a couple of hundred tokens at most.
     """
 
     async def count(prompt: str) -> int:
-        return await count_prompt_tokens(model, api_key, system_prompt, prompt)
+        return await count_prompt_tokens(model, system_prompt, prompt)
 
     available_tokens = model.max_input_tokens - reserve_tokens
 
@@ -375,422 +314,173 @@ def _trim(trimmable: str, kept: int) -> str:
     return trimmable[:kept] + TRIMMED_NOTICE
 
 
-async def _count_anthropic_tokens(
-    client: AsyncAnthropic, model: ModelWindow, system_prompt: str, user_prompt: str
-) -> int:
-    result = await client.messages.count_tokens(
-        model=model.api_model,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
-    )
-    return result.input_tokens
+def _trim(trimmable: str, kept: int) -> str:
+    """The first `kept` characters of a section, told plainly where it was cut."""
+    if kept >= len(trimmable):
+        return trimmable
+    return trimmable[:kept] + TRIMMED_NOTICE
 
 
 async def stream_text(
     *,
     caller: str,
     model: ModelConfig,
-    api_key: str,
     instructions: str,
     cached_prefix: str,
     user_prompt: str,
     pdf_documents: list[PdfAttachment],
     web_search_enabled: bool,
+    search_provider: web_search.SearchProvider,
     verbosity: Literal["low", "medium"],
 ) -> AsyncGenerator[StreamChunk, None]:
     """
-    Send a streaming chat request and return a generator of answer chunks.
+    Answer on the preset's agent and model, and return a generator of chunks.
 
     The prompt the model reads is cached_prefix + user_prompt. Callers put in
     cached_prefix the opening stretch that repeats verbatim across requests —
-    for research, a case's brief and documents — so the provider can charge it
-    once and re-read it on every later question instead of re-reading the whole
-    case each time. Passing "" is fine and simply caches nothing.
+    for research, a case's brief and documents — which the CLIs' providers
+    cache on their own. Passing "" is fine.
 
-    Text arrives as TextChunks; whatever the model's web searches surfaced
-    arrives alongside as SourceChunks, which carry no answer text and are
-    reported whether or not the answer ends up citing them.
-
-    The request is sent before the generator is returned, so provider errors
-    (e.g. invalid API key) raise here rather than during iteration.
+    The agent runs to completion before this returns, so its errors raise
+    here rather than during iteration.
     """
-    if pdf_documents:
-        logger.info(f"Attaching {len(pdf_documents)} PDF document(s) to request")
-
-    if model.provider == "openai":
-        return await _stream_openai(
-            caller=caller,
-            model=model,
-            api_key=api_key,
-            instructions=instructions,
-            # The Responses API caches long prompt prefixes on its own, so the
-            # split carries no meaning here — send the prompt whole.
-            user_prompt=cached_prefix + user_prompt,
-            pdf_documents=pdf_documents,
-            web_search_enabled=web_search_enabled,
-            verbosity=verbosity,
-        )
-    return await _stream_anthropic(
+    return await _stream_agent(
         caller=caller,
-        model=model,
-        api_key=api_key,
+        provider=model.provider,
+        agent_model=model.agent_model,
         instructions=instructions,
         cached_prefix=cached_prefix,
         user_prompt=user_prompt,
         pdf_documents=pdf_documents,
         web_search_enabled=web_search_enabled,
+        search_provider=search_provider,
         verbosity=verbosity,
     )
 
 
-def _release_request_body(stream: object) -> None:
-    """
-    Let go of a streaming request's body once the provider has started answering.
-
-    httpx keeps the encoded body on `response.request` for as long as the
-    response object lives, and httpcore holds the very same ByteStream through
-    the reader of the response body; a streamed answer keeps both alive until
-    the last token — minutes. For a full-context case that body is the whole
-    case, every text document and every PDF, held once per running answer for
-    nothing: it was sent in full before the first response byte arrived, a
-    streaming request is never retried once its response has started, and
-    nothing downstream reads it back.
-
-    This reaches into httpx internals (its version is pinned), so it touches
-    only the exact shapes it expects — a real httpx response carrying an
-    in-memory body — and leaves anything else alone.
-    """
-    response = getattr(stream, "response", None)
-    if not isinstance(response, httpx.Response):
-        return
-    request = response.request
-    if isinstance(request.stream, httpx.ByteStream):
-        request.stream._stream = b""
-    request._content = b""
-
-
-async def _stream_openai(
+async def _stream_agent(
     *,
     caller: str,
-    model: ModelConfig,
-    api_key: str,
-    instructions: str,
-    user_prompt: str,
-    pdf_documents: list[PdfAttachment],
-    web_search_enabled: bool,
-    verbosity: Literal["low", "medium"],
-) -> AsyncGenerator[StreamChunk, None]:
-    client = AsyncOpenAI(api_key=api_key)
-
-    if pdf_documents:
-        content_parts: list[dict] = [{"type": "input_text", "text": user_prompt}]
-        for doc in pdf_documents:
-            content_parts.append(
-                {
-                    "type": "input_file",
-                    "filename": doc.filename,
-                    "file_data": doc.data_uri,
-                }
-            )
-        api_input: str | list = [{"role": "user", "content": content_parts}]
-    else:
-        api_input = user_prompt
-
-    stream = await client.responses.create(
-        model=model.api_model,
-        instructions=instructions,
-        input=api_input,
-        tools=[{"type": "web_search"}] if web_search_enabled else None,
-        # Without this the response names only the sources it cites. The
-        # searches themselves are billed either way, so this is metadata we
-        # have already paid for.
-        include=["web_search_call.action.sources"] if web_search_enabled else None,
-        # "none" is a real effort level, so test against None rather than truthiness —
-        # omitting the parameter would silently give the model its default effort.
-        reasoning=(
-            {"effort": model.reasoning_effort} if model.reasoning_effort is not None else None
-        ),
-        text={"verbosity": verbosity},
-        stream=True,
-    )
-    _release_request_body(stream)
-
-    async def stream_generator() -> AsyncGenerator[StreamChunk, None]:
-        """Yield text deltas and web-search sources from the Responses API stream."""
-        full_response: list[str] = []
-        try:
-            async for event in stream:
-                if event.type == "response.output_text.delta":
-                    full_response.append(event.delta)
-                    yield TextChunk(event.delta)
-                elif event.type == "response.output_item.done":
-                    for source in _openai_searched_sources(event.item):
-                        yield SourceChunk(source)
-                elif event.type == "response.content_part.done":
-                    for source in _openai_cited_sources(event.part):
-                        yield SourceChunk(source)
-            log_response(caller, "".join(full_response))
-        finally:
-            # Release the HTTP connection when the consumer stops early
-            # (client disconnect, abort) — closing the generator alone won't
-            await stream.close()
-
-    return stream_generator()
-
-
-def _openai_searched_sources(item: ResponseOutputItem) -> list[WebSource]:
-    """
-    Every page one finished web-search call put in front of the model.
-
-    A search action reports the entire result listing the model was shown —
-    dozens of URLs, none of them titled; an open_page action reports the one
-    page it went on to read. Only a finished call carries an action, which is
-    why this reads the done event and never the added one.
-    """
-    if item.type != "web_search_call":
-        return []
-    if item.action.type == "search":
-        return [WebSource(url=source.url) for source in item.action.sources or []]
-    if item.action.type == "open_page":
-        return [WebSource(url=item.action.url)]
-    # A find action searches within a page already reported by an open_page.
-    return []
-
-
-def _openai_cited_sources(part: ResponseOutputText | ResponseOutputRefusal) -> list[WebSource]:
-    """
-    The sources the finished answer cites, carrying the page titles OpenAI
-    reveals nowhere else — its search listings are bare URLs.
-    """
-    if part.type != "output_text":
-        return []
-    return [
-        WebSource(url=annotation.url, title=annotation.title, cited=True)
-        for annotation in part.annotations
-        if annotation.type == "url_citation"
-    ]
-
-
-async def _stream_anthropic(
-    *,
-    caller: str,
-    model: ModelConfig,
-    api_key: str,
+    provider: Provider,
+    agent_model: str,
     instructions: str,
     cached_prefix: str,
     user_prompt: str,
     pdf_documents: list[PdfAttachment],
     web_search_enabled: bool,
+    search_provider: web_search.SearchProvider,
     verbosity: Literal["low", "medium"],
 ) -> AsyncGenerator[StreamChunk, None]:
-    client = AsyncAnthropic(api_key=api_key)
+    """
+    An answer from an agent CLI, delivered whole: the CLI runs to completion
+    before this returns, so its errors raise here,
+    and the generator then yields the finished answer. What the
+    answer could not use is reported with it (ExecutionChunk), never silently
+    dropped.
 
+    The agent has no tools, so with search on Talleyrand searches for it
+    (_search_the_web) and appends the results, after the cacheable opening.
+    Every result is reported as a source; the ones the answer links to are
+    marked cited.
+    """
+    label = PROVIDER_LABELS[provider]
+    # Neither CLI takes a verbosity setting, so it is asked for in the prompt.
     if verbosity == "low":
-        instructions += ANTHROPIC_CONCISE_INSTRUCTION
-    instructions += ANTHROPIC_MARKDOWN_LINK_INSTRUCTION
-    if model.plain_prose:
-        instructions += ANTHROPIC_PLAIN_PROSE_INSTRUCTION
+        instructions += CONCISE_INSTRUCTION
+    instructions += MARKDOWN_LINK_INSTRUCTION
+    prompt = cached_prefix + user_prompt
 
-    content: list[dict] = []
-    if cached_prefix:
-        # The cache breakpoint. Anthropic caches nothing unless a request marks
-        # where its reusable prefix ends, and it matches on exact bytes: tools
-        # and system render before this block, so all three are cached together
-        # and every later question in the case reads them back instead of
-        # paying for them again. Everything after the breakpoint — the tree,
-        # the question — is the part that actually changes.
-        content.append(
-            {
-                "type": "text",
-                "text": cached_prefix,
-                # 5 minutes. A case's questions run in bursts and each read
-                # restarts the clock, so the entry stays warm for as long as
-                # the user keeps working; the hour-long TTL costs twice as much
-                # to write and would only pay for itself across longer gaps.
-                "cache_control": {"type": "ephemeral", "ttl": "5m"},
-            }
-        )
-    content.append({"type": "text", "text": user_prompt})
-    for doc in pdf_documents:
-        content.append(
-            {
-                "type": "document",
-                "source": {
-                    "type": "base64",
-                    "media_type": "application/pdf",
-                    "data": doc.base64_data,
-                },
-                "title": doc.filename,
-            }
-        )
-
-    request_kwargs: dict[str, Any] = {
-        "model": model.api_model,
-        "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
-        "system": instructions,
-        "messages": [{"role": "user", "content": content}],
-        "stream": True,
-    }
+    notes = []
+    results: list[web_search.SearchResult] = []
     if web_search_enabled:
-        # The default allowed_callers includes programmatic tool calling, which
-        # Haiku rejects; we never run code execution, so direct-only is right
-        # for every model.
-        request_kwargs["tools"] = [
-            {
-                "type": "web_search_20260209",
-                "name": "web_search",
-                "allowed_callers": ["direct"],
-            }
-        ]
-    if model.reasoning_effort is not None:
-        request_kwargs["thinking"] = {"type": "adaptive"}
-        request_kwargs["output_config"] = {"effort": model.reasoning_effort}
+        try:
+            results = await _search_the_web(provider, search_provider, user_prompt)
+        except (web_search.SearchError, StructuredGenerationError) as e:
+            notes.append(
+                f"Web search did not run ({e}), so this answer draws on the model's own knowledge."
+            )
+        prompt += _search_results_section(results)
+    if pdf_documents:
+        # Readable PDFs reach an agent as text (query_service); these had none.
+        names = ", ".join(doc.filename for doc in pdf_documents)
+        notes.append(
+            f"{names} could not be read: {label} reads a PDF's text, and "
+            f"{'these have' if len(pdf_documents) > 1 else 'this has'} none, a password, "
+            "or damage."
+        )
 
-    if model.refusal_fallback:
-        request_kwargs["betas"] = [ANTHROPIC_REFUSAL_FALLBACK_BETA]
-        request_kwargs["fallbacks"] = [{"model": ANTHROPIC_REFUSAL_FALLBACK_MODEL}]
-        stream = await client.beta.messages.create(**request_kwargs)
+    if provider == "hermes":
+        # Hermes runs the model it is given; its output does not name one.
+        model = agent_model
+        answer = await hermes.run(system_prompt=instructions, prompt=prompt, model=model)
     else:
-        stream = await client.messages.create(**request_kwargs)
-    _release_request_body(stream)
+        result = await claude_code.run(system_prompt=instructions, prompt=prompt, model=agent_model)
+        answer = str(result.get("result") or "")
+        model = result.get("model")
+    log_response(caller, answer)
 
     async def stream_generator() -> AsyncGenerator[StreamChunk, None]:
-        """Yield text deltas with web-search citations woven in as Markdown links."""
-        full_response: list[str] = []
-        try:
-            async for chunk in _weave_anthropic_deltas(stream, model.label):
-                if isinstance(chunk, TextChunk):
-                    full_response.append(chunk.text)
-                yield chunk
-            log_response(caller, "".join(full_response))
-        finally:
-            # Release the HTTP connection when the consumer stops early
-            # (client disconnect, abort) — closing the generator alone won't
-            await stream.close()
+        yield ExecutionChunk(provider=provider, model=model, notes=tuple(notes))
+        yield TextChunk(answer)
+        for r in results:
+            # ponytail: cited means linked verbatim; a reworded URL counts as uncited.
+            yield SourceChunk(
+                WebSource(url=r.url, title=r.title, page_age=r.published, cited=r.url in answer)
+            )
 
     return stream_generator()
 
 
-async def _weave_anthropic_deltas(
-    stream: AsyncIterable[RawMessageStreamEvent | BetaRawMessageStreamEvent],
-    model_label: str,
-) -> AsyncGenerator[StreamChunk, None]:
+class SearchQueries(BaseModel):
+    queries: list[str]
+
+
+SEARCH_QUERY_INSTRUCTIONS = f"""You write web search queries for a research assistant.
+The user message is a research case: its question tree and, at the end, the CURRENT QUESTION.
+Write up to {MAX_SEARCH_QUERIES} short keyword queries whose results would help answer the
+CURRENT QUESTION. Each must stand alone: spell out what the case refers to, since the search
+engine sees only the query."""
+
+
+async def _search_the_web(
+    provider: Provider, search_provider: web_search.SearchProvider, case_body: str
+) -> list[web_search.SearchResult]:
     """
-    Yield text deltas from a Messages API stream, inserting each web-search
-    source as an inline Markdown link and announcing anything that changed who
-    answered the question.
-
-    Claude delivers the sources it finds via web search as citation events
-    alongside the text, not as links written into the text itself — an answer
-    rendered from text deltas alone references articles without linking them.
-    A citation event arrives after the text it supports, so trailing whitespace
-    is held back until the next text delta; that keeps the link attached to the
-    cited claim instead of dangling after a paragraph break.
-
-    Each completed search also delivers the whole result list Claude was shown,
-    most of which it never cites. Those pass through as SourceChunks — as do
-    the citations, which name the handful the answer actually rests on.
-
-    Three signals would otherwise pass silently and leave the reader with a
-    blank or misattributed answer: a fallback block, meaning the chosen model
-    declined and a stand-in took over mid-answer; a refusal stop reason, meaning
-    no model answered at all; and a stand-in named in the closing usage with no
-    fallback block, meaning the request was routed around the chosen model from
-    the start. Each becomes a visible line in the answer.
+    Search results for the question that ends case_body: the agent writes the
+    queries (one small structured call), the search provider runs them.
     """
-    seen_urls: set[str] = set()
-    pending_whitespace = ""
-    fell_back = False
-    async for event in stream:
-        if event.type == "content_block_start":
-            if event.content_block.type == "fallback":
-                fell_back = True
-                pending_whitespace = ""
-                # Worded as a handoff, not an outcome: the stand-in can refuse
-                # too, and the refusal notice below then completes the story.
-                # Claiming an answer here would contradict it.
-                yield TextChunk(
-                    f"\n\n*{model_label} declined this request — continuing with "
-                    f"`{event.content_block.to.model}`.*\n\n"
-                )
-            elif event.content_block.type == "web_search_tool_result":
-                for source in _anthropic_searched_sources(event.content_block):
-                    yield SourceChunk(source)
-        elif event.type == "content_block_delta":
-            if event.delta.type == "text_delta":
-                text = pending_whitespace + event.delta.text
-                visible = text.rstrip()
-                pending_whitespace = text[len(visible) :]
-                if visible:
-                    yield TextChunk(visible)
-            elif event.delta.type == "citations_delta":
-                citation = event.delta.citation
-                if citation.type == "web_search_result_location":
-                    yield SourceChunk(WebSource(url=citation.url, title=citation.title, cited=True))
-                    link = _web_search_citation_link(citation, seen_urls)
-                    if link:
-                        yield TextChunk(link)
-        elif event.type == "message_delta":
-            if event.delta.stop_reason == "refusal":
-                pending_whitespace = ""
-                yield TextChunk(
-                    "\n\n*Every model that tried this request declined it.*\n\n"
-                    if fell_back
-                    else f"\n\n*{model_label} declined to answer this question.*\n\n"
-                )
-            elif not fell_back and (stand_in := _fallback_model_that_served(event.usage)):
-                pending_whitespace = ""
-                yield TextChunk(
-                    f"\n\n*{model_label} did not write this answer — Anthropic routed "
-                    f"the request to `{stand_in}`.*\n\n"
-                )
-
-
-def _fallback_model_that_served(usage: MessageDeltaUsage | BetaMessageDeltaUsage) -> str | None:
-    """
-    The stand-in model that answered when no fallback block appeared, else None.
-
-    Once a model declines, Anthropic remembers the decision and routes later
-    matching requests straight to the stand-in — that turn has no fallback
-    block, so a `fallback_message` entry in the per-iteration usage is the only
-    sign the answer came from another model. Plain (non-beta) streams never
-    report iterations, and only requests that opted into fallbacks are ever
-    routed this way.
-    """
-    if not isinstance(usage, BetaMessageDeltaUsage):
-        return None
-    for iteration in usage.iterations or []:
-        if isinstance(iteration, BetaFallbackMessageIterationUsage):
-            return iteration.model
-    return None
-
-
-def _anthropic_searched_sources(block: WebSearchToolResultBlock) -> list[WebSource]:
-    """
-    Every result one completed search handed to Claude, cited or not.
-
-    A search that failed reports an error object here instead of a list, and
-    contributes no sources.
-    """
-    if not isinstance(block.content, list):
+    label = web_search.LABELS[search_provider]
+    if not web_search.api_key(search_provider):
+        # Checked first, so a missing key does not spend a query-writing call.
+        raise web_search.SearchError(
+            f"it needs a {label} API key, {search_provider.upper()}_API_KEY in backend/.env"
+        )
+    # ponytail: queries come from the tree and question alone, not the brief and
+    # documents, to keep this call small.
+    planned = await _parse_structured_agent(
+        caller="web_search_queries",
+        provider=provider,
+        system_prompt=SEARCH_QUERY_INSTRUCTIONS,
+        user_content=case_body,
+        schema=SearchQueries,
+    )
+    queries = [q.strip() for q in planned.queries if q.strip()][:MAX_SEARCH_QUERIES]
+    if not queries:
         return []
-    return [
-        WebSource(url=result.url, title=result.title, page_age=result.page_age)
-        for result in block.content
+    results = await web_search.search(search_provider, queries)
+    logger.info(f"{label}: {len(queries)} queries, {len(results)} results")
+    return results
+
+
+def _search_results_section(results: list[web_search.SearchResult]) -> str:
+    if not results:
+        return ""
+    lines = [
+        "\n\nWEB SEARCH RESULTS (found for the CURRENT QUESTION just now; these are the "
+        "only web sources you have, so cite the ones you use as Markdown links to their "
+        "exact URLs):"
     ]
-
-
-def _web_search_citation_link(
-    citation: CitationsWebSearchResultLocation, seen_urls: set[str]
-) -> str | None:
-    """Inline Markdown link for a web-search citation; None for repeat sources."""
-    if citation.url in seen_urls:
-        return None
-    seen_urls.add(citation.url)
-    # Backslashes are doubled first so they can't corrupt the escapes added
-    # after them. Square brackets break Markdown link text; dollar signs open
-    # inline math in the answer renderer; parentheses break the URL part.
-    label = citation.title or urlparse(citation.url).netloc.removeprefix("www.")
-    label = label.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]").replace("$", "\\$")
-    url = citation.url.replace("(", "%28").replace(")", "%29")
-    return f" ([{label}]({url}))"
+    for n, r in enumerate(results, start=1):
+        dated = f" ({r.published})" if r.published else ""
+        lines.append(f"[{n}] {r.title}{dated}\n    {r.url}\n    {r.snippet}")
+    return "\n".join(lines)

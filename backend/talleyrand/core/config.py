@@ -3,8 +3,13 @@ Configuration settings for the Talleyrand backend.
 Should be split in the future, so that each app registers its own settings.
 """
 
-from pydantic import AnyUrl, EmailStr, Field, HttpUrl
+from typing import Literal
+
+from pydantic import AnyUrl, EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# The one frontend a session serves (start-local.sh runs it here).
+LOCAL_FRONTEND_ORIGIN = "http://localhost:3000"
 
 
 class Settings(BaseSettings):
@@ -20,76 +25,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-    )
-
-    # JWT Settings
-    jwt_secret_key: str = Field(
-        ...,
-        description=(
-            "Secret key used for signing JWT tokens. "
-            "Must be a unique random value per deployment, generated with `openssl rand -hex 32`."
-        ),
-        min_length=32,
-    )
-    jwt_algorithm: str = Field(
-        default="HS256",
-        description="Algorithm used for JWT encoding/decoding",
-    )
-    jwt_access_token_expire_minutes: int = Field(
-        default=1440,
-        description="Expiration time for JWT access tokens in minutes",
-    )
-    jwt_refresh_token_expire_days: int = Field(
-        default=7,
-        description="Expiration time for JWT refresh tokens in days",
-    )
-
-    # Google OAuth Settings
-    google_client_id: str = Field(default="", description="Google OAuth client ID", min_length=1)
-    google_client_secret: str = Field(
-        default="", description="Google OAuth client secret", min_length=1
-    )
-    google_redirect_uri: HttpUrl = Field(
-        ...,
-        description="Redirect URI for Google OAuth callbacks",
-    )
-    google_token_url: HttpUrl = Field(
-        default=HttpUrl("https://oauth2.googleapis.com/token"),
-        description="URL to obtain Google OAuth tokens",
-    )
-    google_userinfo_url: HttpUrl = Field(
-        default=HttpUrl("https://www.googleapis.com/oauth2/v2/userinfo"),
-        description="URL to fetch user info from Google",
-    )
-    auth_failure_redirect: HttpUrl = Field(
-        default=HttpUrl("http://localhost:3000/auth/failure"),
-        description="Frontend URL to redirect after successful authentication",
-    )
-
-    # CORS Settings
-    cors_origins: list[str] = Field(
-        default_factory=lambda: [
-            "http://localhost:3000",
-        ],
-        description="List of allowed CORS origins",
-    )
-
-    email_whitelist_enabled: bool = Field(
-        default=False,
-        description="Whether to enable email whitelist checking",
-    )
-
-    email_whitelist: list[EmailStr] = Field(
-        default_factory=lambda: [
-            "example@example.com",
-        ],
-        description="List of allowed emails",
-    )
-
-    # Cookie Settings (used for oauth_state cookie only)
-    cookie_secure: bool = Field(
-        default=True,
-        description="Whether cookies should be marked as secure",
     )
 
     mongodb_url: AnyUrl = Field(
@@ -122,6 +57,76 @@ class Settings(BaseSettings):
     log_llm_requests: bool = Field(
         default=False,
         description="Log full LLM responses to console",
+    )
+
+    local_user_email: EmailStr = Field(
+        default="local@example.com",
+        description=(
+            "Who the session acts as. Cases belong to an email, so setting this to the "
+            "address you signed in with on a hosted Talleyrand opens the cases you had there."
+        ),
+    )
+    agent_backend: Literal["claude_code", "hermes"] = Field(
+        default="claude_code",
+        description=(
+            "The signed-in agent CLI that runs kickstart, suggestions, summaries, reports "
+            "and naming. Answers run on whichever agent the question's model names."
+        ),
+    )
+    claude_code_executable: str = Field(default="claude", description="The `claude` CLI to run")
+    claude_code_model: str = Field(
+        default="sonnet",
+        description=(
+            "Model passed to `claude --model` for the agent's own work (kickstart, "
+            "suggestions, summaries, reports, naming); answers run the model they name"
+        ),
+    )
+    claude_code_effort: str = Field(
+        default="medium",
+        description="Effort level passed to `claude --effort` for every Claude Code call",
+    )
+    hermes_executable: str = Field(default="hermes", description="The `hermes` CLI to run")
+    hermes_provider: str = Field(
+        default="openai-codex",
+        description="Hermes provider every Hermes call is pinned to (openai-codex: a ChatGPT plan)",
+    )
+    hermes_model: str = Field(
+        default="gpt-6-astra",
+        description=(
+            "Model passed to `hermes chat --model` for the agent's own work; answers run "
+            "the model they name"
+        ),
+    )
+    hermes_reasoning: str = Field(
+        default="medium",
+        description="Reasoning effort passed to `hermes chat --reasoning` for every Hermes call",
+    )
+    kagi_api_key: str = Field(
+        default="",
+        description=(
+            "Kagi Search API key, for answers searching through Kagi (billed per query); "
+            "without it they say search is unavailable."
+        ),
+    )
+    mixedbread_api_key: str = Field(
+        default="",
+        description=(
+            "Mixedbread API key, for answers searching through Mixedbread's web store "
+            "(billed per search); without it they say search is unavailable."
+        ),
+    )
+    agent_timeout_seconds: float = Field(
+        default=900.0,
+        gt=0,
+        description="Longest one agent CLI call may run before it is killed",
+    )
+    agent_concurrency: int = Field(
+        default=2,
+        ge=1,
+        description=(
+            "How many agent CLI calls may run at once, across backends. They draw on "
+            "subscription usage windows."
+        ),
     )
 
 

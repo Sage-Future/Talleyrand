@@ -45,7 +45,7 @@ interface QuestionRefChipProps {
   onMouseLeave: () => void;
 }
 
-/** The chip itself, shared with the shared-case viewer's stand-in resolver. */
+/** The chip itself, apart from resolving which question it names. */
 export const QuestionRefChip: FC<QuestionRefChipProps> = ({
   query,
   state,

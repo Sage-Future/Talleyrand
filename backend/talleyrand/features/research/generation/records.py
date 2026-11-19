@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 from pymongo.asynchronous.database import AsyncDatabase
 
-from talleyrand.features.graph.dtos import ResearchSuggestionDTO, WebSourceDTO
+from talleyrand.features.graph.dtos import ExecutionDTO, ResearchSuggestionDTO, WebSourceDTO
 from talleyrand.infra.db import get_db
 
 JobKind = Literal["answer", "suggestions", "big_picture", "cheat_sheet"]
@@ -41,6 +41,7 @@ class GenerationJobRecord(BaseModel):
     answered_at: datetime | None = None
     sources: list[WebSourceDTO] = []
     sources_found: int = 0
+    execution: ExecutionDTO | None = None
     suggestions: list[ResearchSuggestionDTO] = []
     cheat_sheet: str | None = None
     error: str | None = None
@@ -119,6 +120,7 @@ class GenerationJobRepository:
         answered_at: datetime,
         sources: list[WebSourceDTO],
         sources_found: int,
+        execution: ExecutionDTO | None,
     ) -> bool:
         """Mark an answer job done. Returns False if the record was pruned meanwhile."""
         result = await self.collection.update_one(
@@ -130,6 +132,9 @@ class GenerationJobRepository:
                     "answeredAt": answered_at.isoformat(),
                     "sources": [s.model_dump(mode="json", by_alias=True) for s in sources],
                     "sourcesFound": sources_found,
+                    "execution": execution.model_dump(mode="json", by_alias=True)
+                    if execution
+                    else None,
                 }
             },
         )

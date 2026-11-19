@@ -4,50 +4,6 @@
  */
 
 export interface paths {
-    "/oauth/google/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Callback
-         * @description Handle Google OAuth callback.
-         *     Exchanges authorization code for access token and stores it in cookies.
-         *     Validates state from cookie to prevent CSRF and login CSRF attacks.
-         */
-        get: operations["callback_oauth_google_callback_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/oauth/google/redirect_url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Redirect Url
-         * @description Redirect user to Google OAuth.
-         *     Sets oauth_state cookie (first-party on backend domain) for CSRF protection,
-         *     then redirects the browser directly to Google's consent page.
-         */
-        get: operations["redirect_url_oauth_google_redirect_url_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/graph/{graph_id}": {
         parameters: {
             query?: never;
@@ -176,132 +132,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Exchange Token
-         * @description Exchange a one-time authorization code for access and refresh tokens.
-         */
-        post: operations["exchange_token_auth_token_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Access Token
-         * @description Refresh access token using refresh token from request body.
-         */
-        post: operations["refresh_access_token_auth_refresh_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Current User
-         * @description Get current authenticated user info.
-         *     Used by frontend to check authentication status.
-         */
-        get: operations["get_current_user_auth_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/share/graph/{graph_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Enable Share
-         * @description Enable sharing for a graph. Idempotent.
-         */
-        post: operations["enable_share_share_graph__graph_id__post"];
-        /**
-         * Disable Share
-         * @description Disable sharing for a graph.
-         */
-        delete: operations["disable_share_share_graph__graph_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/share/{graph_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Shared Graph
-         * @description Get a shared graph by ID. No authentication required.
-         *     Returns 404 for both "not found" and "not shared" to prevent enumeration.
-         */
-        get: operations["get_shared_graph_share__graph_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/share/{graph_id}/copy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Copy Shared Graph
-         * @description Copy a shared graph to the authenticated user's account.
-         */
-        post: operations["copy_shared_graph_share__graph_id__copy_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/research/{graph_id}/node/{node_id}/suggest": {
         parameters: {
             query?: never;
@@ -424,31 +254,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/research/{graph_id}/stream-ticket": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Stream Ticket
-         * @description Hand out the credential the browser will put in the stream URL.
-         *
-         *     Identity and ownership are established here, on an ordinary authenticated
-         *     request whose token travels in a header. What goes into the URL — and from
-         *     there into every access log — is only this ticket: one case, half a minute,
-         *     no access to anything else.
-         */
-        post: operations["create_stream_ticket_research__graph_id__stream_ticket_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/research/kickstart/brief": {
         parameters: {
             query?: never;
@@ -503,26 +308,6 @@ export interface paths {
          * @description Generate a Markdown report summarizing the whole case.
          */
         post: operations["generate_report_research_report_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/transcription/transcribe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Transcribe Audio
-         * @description Transcribe a recorded audio clip into text for the kickstart notes.
-         */
-        post: operations["transcribe_audio_transcription_transcribe_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -647,6 +432,24 @@ export interface components {
             target: string;
         };
         /**
+         * ExecutionDTO
+         * @description How an agent CLI answer was produced: the provider (claude_code, hermes),
+         *     the model it reported, and notes on what it could not use. Shown beside
+         *     the answer; never fed back into any prompt. Absent on API-key answers and
+         *     on answers from before it was recorded.
+         */
+        ExecutionDTO: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model?: string | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+        };
+        /**
          * GenerateAnswerRequestDTO
          * @description Request body to start (or queue) an answer generation for a question node.
          */
@@ -661,6 +464,8 @@ export interface components {
              * @default true
              */
             webSearchEnabled: boolean;
+            /** @default kagi */
+            searchProvider: components["schemas"]["SearchProvider"];
             /**
              * Verbosity
              * @default low
@@ -821,6 +626,7 @@ export interface components {
              * @default 0
              */
             sourcesFound: number;
+            execution?: components["schemas"]["ExecutionDTO"] | null;
             /**
              * Suggestions
              * @default []
@@ -970,6 +776,7 @@ export interface components {
              * @default 0
              */
             sourcesFound: number;
+            execution?: components["schemas"]["ExecutionDTO"] | null;
         };
         /**
          * NodeDTO
@@ -997,11 +804,6 @@ export interface components {
              * Format: date-time
              */
             at: string;
-        };
-        /** RefreshRequest */
-        RefreshRequest: {
-            /** Refresh Token */
-            refresh_token: string;
         };
         /**
          * RenameGraphDTO
@@ -1125,6 +927,8 @@ export interface components {
              */
             ackedJobIds: string[];
         };
+        /** @enum {string} */
+        SearchProvider: "kagi" | "mixedbread";
         /**
          * SelectionDTO
          * @description A passage the user selected in the current question's answer.
@@ -1136,14 +940,6 @@ export interface components {
             prefix?: string | null;
             /** Suffix */
             suffix?: string | null;
-        };
-        /**
-         * StreamTicketDTO
-         * @description A short-lived credential for opening one case's job event stream.
-         */
-        StreamTicketDTO: {
-            /** Ticket */
-            ticket: string;
         };
         /**
          * SuggestFollowupsRequestDTO
@@ -1173,58 +969,6 @@ export interface components {
             suffix?: string | null;
             /** Childnodeid */
             childNodeId?: string | null;
-        };
-        /** TokenExchangeRequest */
-        TokenExchangeRequest: {
-            /** Code */
-            code: string;
-        };
-        /** TokenResponse */
-        TokenResponse: {
-            /** Access Token */
-            access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
-        };
-        /**
-         * TranscribeRequestDTO
-         * @description Request body for transcribing a recorded audio clip.
-         */
-        TranscribeRequestDTO: {
-            /** Audio */
-            audio: string;
-            /** Mimetype */
-            mimeType: string;
-        };
-        /**
-         * TranscribeResponseDTO
-         * @description Response body with the transcribed text.
-         */
-        TranscribeResponseDTO: {
-            /** Text */
-            text: string;
-        };
-        /**
-         * User
-         * @description Domain model for User entity.
-         */
-        User: {
-            /** Id */
-            id: string;
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Name */
-            name?: string | null;
-            /** Picture */
-            picture?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1265,76 +1009,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    callback_oauth_google_callback_get: {
-        parameters: {
-            query: {
-                code?: string | null;
-                state: string;
-                scope?: string | null;
-                authuser?: number | null;
-                prompt?: string | null;
-                error?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: {
-                oauth_state?: string | null;
-            };
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    redirect_url_oauth_google_redirect_url_get: {
-        parameters: {
-            query: {
-                /** @description URL to redirect to after OAuth flow */
-                next_url: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_graph__graph_id__get: {
         parameters: {
             query?: never;
@@ -1543,218 +1217,6 @@ export interface operations {
     generate_name_graph__graph_id__generate_name_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
-            path: {
-                graph_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    exchange_token_auth_token_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TokenExchangeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_access_token_auth_refresh_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_current_user_auth_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["User"];
-                };
-            };
-        };
-    };
-    enable_share_share_graph__graph_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                graph_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    disable_share_share_graph__graph_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                graph_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_shared_graph_share__graph_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                graph_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    copy_shared_graph_share__graph_id__copy_post: {
-        parameters: {
-            query?: never;
             header?: never;
             path: {
                 graph_id: string;
@@ -1786,9 +1248,7 @@ export interface operations {
     suggest_research__graph_id__node__node_id__suggest_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 node_id: string;
             };
@@ -1823,10 +1283,7 @@ export interface operations {
     generate_answer_research__graph_id__node__node_id__generate_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-                "x-anthropic-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 graph_id: string;
                 node_id: string;
@@ -1862,9 +1319,7 @@ export interface operations {
     suggest_followups_research__graph_id__node__node_id__suggest_followups_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 graph_id: string;
                 node_id: string;
@@ -1900,9 +1355,7 @@ export interface operations {
     generate_cheat_sheet_research__graph_id__node__node_id__cheat_sheet_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 graph_id: string;
                 node_id: string;
@@ -1934,9 +1387,7 @@ export interface operations {
     suggest_big_picture_research__graph_id__suggest_big_picture_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 graph_id: string;
             };
@@ -1967,10 +1418,7 @@ export interface operations {
     context_size_research__graph_id__context_size_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-                "x-anthropic-api-key"?: string | null;
-            };
+            header?: never;
             path: {
                 graph_id: string;
             };
@@ -2002,43 +1450,10 @@ export interface operations {
             };
         };
     };
-    create_stream_ticket_research__graph_id__stream_ticket_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                graph_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StreamTicketDTO"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     generate_brief_research_kickstart_brief_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2071,9 +1486,7 @@ export interface operations {
     generate_questions_research_kickstart_questions_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2106,9 +1519,7 @@ export interface operations {
     generate_report_research_report_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2125,41 +1536,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportResponseDTO"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    transcribe_audio_transcription_transcribe_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-openai-api-key"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TranscribeRequestDTO"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TranscribeResponseDTO"];
                 };
             };
             /** @description Validation Error */

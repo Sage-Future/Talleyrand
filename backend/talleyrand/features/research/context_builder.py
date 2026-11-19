@@ -7,8 +7,10 @@ questions appear bare. By the creation invariant, all ancestors of the current
 question are read, so the current path needs no special-casing.
 """
 
+import asyncio
 from dataclasses import dataclass, field
 
+from talleyrand.core.documents import UnreadablePdfError, pdf_text
 from talleyrand.features.graph.dtos import DocumentDTO, GraphNoId, NodeContentDTO
 from talleyrand.features.research.ref_tokens import outline_ref_tokens
 
@@ -262,3 +264,40 @@ def collect_research_pdf_documents(graph: GraphNoId, node_id: str) -> list[Docum
             add_pdfs(content.documents)
 
     return pdf_documents
+
+
+async def read_pdfs_as_text(
+    pdfs: list[DocumentDTO],
+) -> tuple[dict[str, DocumentDTO], list[tuple[DocumentDTO, str]]]:
+    """
+    For a model that reads text only (the agent CLIs): each PDF's text layer as
+    a text document named after the file, by id, and the PDFs that have none
+    to give, each with the reason.
+    """
+    readable: dict[str, DocumentDTO] = {}
+    unreadable: list[tuple[DocumentDTO, str]] = []
+    for doc in pdfs:
+        try:
+            text = await asyncio.to_thread(pdf_text, doc.content)
+        except UnreadablePdfError as e:
+            unreadable.append((doc, str(e)))
+            continue
+        readable[doc.id] = DocumentDTO(id=doc.id, name=f"{doc.name}.pdf", type="txt", content=text)
+    return readable, unreadable
+
+
+def replace_documents(graph: GraphNoId, by_id: dict[str, DocumentDTO]) -> GraphNoId:
+    """The graph with every document in `by_id` swapped, wherever it is attached."""
+
+    def swap(documents: list[DocumentDTO]) -> list[DocumentDTO]:
+        return [by_id.get(doc.id, doc) for doc in documents]
+
+    return graph.model_copy(
+        update={
+            "case_documents": swap(graph.case_documents),
+            "node_contents": [
+                content.model_copy(update={"documents": swap(content.documents)})
+                for content in graph.node_contents
+            ],
+        }
+    )

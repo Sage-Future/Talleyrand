@@ -131,8 +131,6 @@ async def test_create_inserts_at_revision_zero_with_its_name():
     assert collection.inserted["revision"] == 0
     assert collection.inserted["name"] == "A case"
     assert collection.inserted["userId"] == "user@example.com"
-    # A copy of a shared case must not arrive public.
-    assert collection.inserted["shared"] is False
 
 
 @pytest.mark.asyncio
@@ -142,20 +140,6 @@ async def test_racing_creates_yield_a_conflict_not_a_crash():
 
     with pytest.raises(GraphConflictError):
         await repo.create("user@example.com", "graph-1", _graph())
-
-
-@pytest.mark.asyncio
-async def test_overwrite_writes_name_and_revision_unconditionally():
-    collection = _FakeCollection(update_result=None)
-    repo = GraphDataRepository(db=_FakeDB(collection))
-
-    await repo.overwrite("user@example.com", "demo-1", _graph())
-
-    (filter_doc, update_doc, kwargs), *_ = collection.update_calls
-    assert "revision" not in filter_doc
-    assert kwargs.get("upsert") is True
-    assert update_doc["$set"]["name"] == "A case"
-    assert update_doc["$set"]["revision"] == 0
 
 
 class _ConflictingRepo:

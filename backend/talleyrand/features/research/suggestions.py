@@ -5,13 +5,12 @@ Research suggester: proposes up to 3 follow-up questions for a just-read answer.
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from talleyrand.core.llm import parse_structured
-from talleyrand.core.model_settings import get_model_window
+from talleyrand.core.model_settings import auxiliary_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
-from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.dtos import GraphNoId
 from talleyrand.features.research.context_builder import build_research_context
 from talleyrand.features.research.context_fitting import fit_research_context
@@ -22,8 +21,7 @@ from talleyrand.features.research.dtos import (
 )
 
 MAX_SUGGESTIONS = 3
-SUGGESTER_MODEL = get_model_window("gpt-6-astra")
-SUGGESTER_REASONING_EFFORT = "low"
+SUGGESTER_MODEL = auxiliary_window()
 
 INSTRUCTIONS = (
     TALLEYRAND_DESCRIPTION
@@ -81,7 +79,6 @@ async def get_research_suggestions(
     graph: GraphNoId,
     node_id: UUID,
     request_more: bool,
-    openai_api_key: str,
     selection: SelectionDTO | None = None,
 ) -> ResearchSuggestionSchema:
     """Generate follow-up question suggestions for a read answer."""
@@ -125,31 +122,24 @@ async def get_research_suggestions(
     context = await fit_research_context(
         context,
         model=SUGGESTER_MODEL,
-        api_key=openai_api_key,
         system_prompt=instructions,
         tail="\n\n" + "\n\n".join(tail_sections),
     )
     return await parse_structured(
         caller="research_suggestions",
-        model=SUGGESTER_MODEL.api_model,
-        api_key=openai_api_key,
         system_prompt=instructions,
         user_content="\n\n".join([context.text, *tail_sections]),
         schema=ResearchSuggestionSchema,
-        reasoning_effort=SUGGESTER_REASONING_EFFORT,
     )
 
 
 async def suggest(
     node_id: UUID,
     payload: ResearchSuggestRequestDTO,
-    openai_api_key: Annotated[str, Depends(get_openai_api_key)],
 ) -> ResearchSuggestResponseDTO:
     """Endpoint for transient question suggestions (selection popup, canvas)."""
     try:
-        result = await get_research_suggestions(
-            payload.graph, node_id, False, openai_api_key, payload.selection
-        )
+        result = await get_research_suggestions(payload.graph, node_id, False, payload.selection)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

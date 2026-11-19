@@ -8,17 +8,14 @@ current landscape; the brief writer must not — a brief only distills the
 user's own notes and never brings in outside facts.
 """
 
-from typing import Annotated
-
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel
 
-from talleyrand.core.llm import fit_to_context, parse_structured
-from talleyrand.core.model_settings import get_model_window
+from talleyrand.core.llm import StructuredGenerationError, fit_to_context, parse_structured
+from talleyrand.core.model_settings import auxiliary_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
-from talleyrand.features.graph.dependencies import get_openai_api_key
 from talleyrand.features.graph.dtos import DocumentDTO
-from talleyrand.features.research.context_builder import format_documents
+from talleyrand.features.research.context_builder import format_documents, read_pdfs_as_text
 from talleyrand.features.research.dtos import (
     KickstartBriefRequestDTO,
     KickstartBriefResponseDTO,
@@ -27,8 +24,7 @@ from talleyrand.features.research.dtos import (
     KickstartQuestionsResponseDTO,
 )
 
-KICKSTART_MODEL = get_model_window("gpt-6-astra")
-KICKSTART_REASONING_EFFORT = "low"
+KICKSTART_MODEL = auxiliary_window()
 # Caps only the model's own proposals; the user's own questions extracted from
 # the notes are always returned in full, however many there are.
 MAX_INITIAL_QUESTIONS = 10
@@ -118,21 +114,26 @@ class KickstartQuestionsSchema(BaseModel):
 
 
 async def _user_content(
-    sections: list[str], documents: list[DocumentDTO], *, api_key: str, system_prompt: str
-) -> str | list[dict]:
+    sections: list[str], documents: list[DocumentDTO], *, system_prompt: str
+) -> str:
     """
-    Join prompt sections; inline txt documents, attach PDFs as file parts.
+    Join prompt sections and inline the documents, a PDF as the text document
+    its text layer makes.
 
     The inlined documents are the section that gives way when the notes and
     documents together are more than the model accepts.
     """
     parts = list(sections)
+    readable, unreadable = await read_pdfs_as_text([d for d in documents if d.type == "pdf"])
+    if unreadable:
+        doc, reason = unreadable[0]
+        raise StructuredGenerationError(f"{doc.name}.pdf could not be read: {reason}.")
+    documents = [readable.get(doc.id, doc) for doc in documents]
     if documents:
         attached = "\n".join(format_documents(documents, "", label="ATTACHED DOCUMENTS"))
         parts.append(
             await fit_to_context(
                 model=KICKSTART_MODEL,
-                api_key=api_key,
                 system_prompt=system_prompt,
                 keep_before="\n\n".join(parts) + "\n\n",
                 trimmable=attached,
@@ -140,21 +141,7 @@ async def _user_content(
             )
         )
 
-    text = "\n\n".join(parts)
-    pdf_docs = [doc for doc in documents if doc.type == "pdf"]
-    if not pdf_docs:
-        return text
-
-    content: list[dict] = [{"type": "input_text", "text": text}]
-    content.extend(
-        {
-            "type": "input_file",
-            "filename": f"{doc.name}.pdf",
-            "file_data": doc.content,  # Already has data:application/pdf;base64, prefix
-        }
-        for doc in pdf_docs
-    )
-    return content
+    return "\n\n".join(parts)
 
 
 def _question_list_section(title: str, questions: list[str]) -> str:
@@ -163,7 +150,6 @@ def _question_list_section(title: str, questions: list[str]) -> str:
 
 async def generate_brief(
     payload: KickstartBriefRequestDTO,
-    openai_api_key: Annotated[str, Depends(get_openai_api_key)],
 ) -> KickstartBriefResponseDTO:
     """Generate the case brief from the user's kickoff notes."""
     notes = payload.input_text.strip()
@@ -172,24 +158,19 @@ async def generate_brief(
 
     parsed = await parse_structured(
         caller="research_kickstart_brief",
-        model=KICKSTART_MODEL.api_model,
-        api_key=openai_api_key,
         system_prompt=BRIEF_INSTRUCTIONS,
         user_content=await _user_content(
             [f"NOTES:\n{notes}"],
             payload.documents,
-            api_key=openai_api_key,
             system_prompt=BRIEF_INSTRUCTIONS,
         ),
         schema=KickstartBriefSchema,
-        reasoning_effort=KICKSTART_REASONING_EFFORT,
     )
     return KickstartBriefResponseDTO(brief=parsed.brief.strip())
 
 
 async def generate_questions(
     payload: KickstartQuestionsRequestDTO,
-    openai_api_key: Annotated[str, Depends(get_openai_api_key)],
 ) -> KickstartQuestionsResponseDTO:
     """Generate starting questions from the kickoff notes and list state."""
     notes = payload.input_text.strip()
@@ -226,15 +207,9 @@ async def generate_questions(
     instructions = QUESTIONS_INSTRUCTIONS.format(max_questions=max_questions)
     parsed = await parse_structured(
         caller="research_kickstart_questions",
-        model=KICKSTART_MODEL.api_model,
-        api_key=openai_api_key,
         system_prompt=instructions,
-        user_content=await _user_content(
-            sections, payload.documents, api_key=openai_api_key, system_prompt=instructions
-        ),
+        user_content=await _user_content(sections, payload.documents, system_prompt=instructions),
         schema=KickstartQuestionsSchema,
-        reasoning_effort=KICKSTART_REASONING_EFFORT,
-        web_search_enabled=True,
     )
 
     # All of the user's own questions survive; only the model's proposals are capped

@@ -127,7 +127,6 @@ class GraphDocument(BaseModel):
     edges: list[EdgeDTO]
     node_contents: list[NodeContentDTO]
     created_at: datetime | None = None
-    shared: bool = False
 
     # Optimistic-concurrency token: incremented on every accepted save. A save
     # carries the revision it was built on and only lands if the stored case
@@ -146,7 +145,7 @@ def _storable_fields(graph_data: GraphDocument) -> tuple[dict[str, Any], str, in
     """The document body a whole-case write stores, plus its name and revision.
 
     Strips what such a write must never carry: userId and createdAt belong to
-    the case's creation, and shared is the share endpoints' to set. The name
+    the case's creation. The name
     is owned by the rename endpoint (auto-naming uses it too), so a
     whole-case save can't revert a rename that landed after its snapshot — it
     is applied only where the case is created. The size guard runs here,
@@ -156,7 +155,6 @@ def _storable_fields(graph_data: GraphDocument) -> tuple[dict[str, Any], str, in
     data_dict = graph_data.model_dump(mode="json", by_alias=True)
     data_dict.pop("userId", None)  # Don't update userId (set on creation only)
     data_dict.pop("createdAt", None)  # Don't update createdAt (set on creation only)
-    data_dict.pop("shared", None)  # Don't update shared (managed by share endpoints only)
     name = data_dict.pop("name")
     revision = data_dict.pop("revision")
 
@@ -258,16 +256,6 @@ class GraphDataRepository:
                     "createdAt": 1,
                     "nodeCount": {"$size": "$nodes"},
                     "edgeCount": {"$size": "$edges"},
-                    "shared": {"$ifNull": ["$shared", False]},
-                    # Names only: the listing tells the owner which files would
-                    # travel with a share link, never the file contents.
-                    "documentNames": {
-                        "$map": {
-                            "input": {"$ifNull": ["$caseDocuments", []]},
-                            "as": "doc",
-                            "in": "$$doc.name",
-                        }
-                    },
                 }
             },
         ]
@@ -280,10 +268,10 @@ class GraphDataRepository:
         """Insert a new case at revision 0. The only write that makes one.
 
         Saves never create (see save), so every case enters the database here:
-        a new empty case, a copy of a shared one, an imported file. The
-        caller's revision is ignored — a new case starts at 0 — and userId,
-        createdAt and shared are set here rather than taken from the payload,
-        so an imported file can't claim another owner or arrive public.
+        a new empty case or an imported file. The caller's revision is
+        ignored — a new case starts at 0 — and userId and createdAt are set
+        here rather than taken from the payload, so an imported file can't
+        claim another owner.
 
         Raises GraphConflictError if the id is already taken (two creates
         raced), and GraphTooLargeError like save().
@@ -298,7 +286,6 @@ class GraphDataRepository:
                     "userId": user_id,
                     "name": name,
                     "createdAt": datetime.now(UTC),
-                    "shared": False,
                     "revision": 0,
                 }
             )
@@ -352,29 +339,6 @@ class GraphDataRepository:
             raise GraphNotFoundError()
         raise GraphConflictError()
 
-    async def overwrite(self, user_id: str, graph_id: str, graph_data: GraphDocument) -> None:
-        """Write a case whole — name and revision included — creating it if absent.
-
-        For demo seeding only, where the code is the source of truth and
-        nothing else ever writes these cases. Every other write goes through
-        create() or save() and respects the stored revision.
-        """
-
-        data_dict, name, revision = _storable_fields(graph_data)
-        await self.db["graph_data"].find_one_and_update(
-            {"_id": graph_id, "userId": user_id},
-            {
-                "$setOnInsert": {
-                    "_id": graph_id,
-                    "userId": user_id,
-                    "createdAt": datetime.now(UTC),
-                },
-                "$set": {**data_dict, "name": name, "revision": revision},
-            },
-            upsert=True,
-            projection={"_id": 1},
-        )
-
     async def delete(self, user_id: str, graph_id: str) -> bool:
         """Delete a graph by ID for a specific user."""
         result = await self.db["graph_data"].delete_one({"_id": graph_id, "userId": user_id})
@@ -387,24 +351,6 @@ class GraphDataRepository:
             {"$set": {"name": new_name}},
         )
         return result.modified_count > 0
-
-    async def get_shared_by_id(self, graph_id: str) -> tuple[str, GraphDocument] | None:
-        """Get graph data by ID only if it is shared. No user scope."""
-        data: dict[str, Any] | None = await self.db["graph_data"].find_one(
-            {"_id": graph_id, "shared": True}
-        )
-        if data is None:
-            return None
-        graph_id = data["_id"]
-        return (graph_id, GraphDocument(**data))
-
-    async def set_shared(self, user_id: str, graph_id: str, *, shared: bool) -> bool:
-        """Toggle the shared flag on a graph. Returns True if the graph was found and updated."""
-        result = await self.db["graph_data"].update_one(
-            {"_id": graph_id, "userId": user_id},
-            {"$set": {"shared": shared}},
-        )
-        return result.matched_count > 0
 
 
 def get_graph_repo(

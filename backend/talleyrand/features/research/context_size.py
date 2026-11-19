@@ -5,24 +5,18 @@ The composer shows a meter of it. Counting client-side from characters is not
 good enough: the same characters are one token or three depending on the
 script and the tokenizer, and a case measured at 44% of the window by
 characters was 142% of it by tokens (2026-09-14). So the count is made here,
-by the counter the request will be judged by — tiktoken for OpenAI models,
-Anthropic's token-counting endpoint for Claude models — on the prompt the
-answer would be built from: the saved case with the draft filed as a new
-question.
+with tiktoken, on the prompt the answer would be built from: the saved case
+with the draft filed as a new question.
 """
 
-import asyncio
 import logging
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from anthropic import APIError as AnthropicAPIError
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 
 from talleyrand.core.llm import count_prompt_tokens
 from talleyrand.core.model_settings import get_model_config
-from talleyrand.core.token_counter import count_tokens
-from talleyrand.features.auth_jwt import router as auth_app
 from talleyrand.features.graph.dtos import (
     DocumentDTO,
     EdgeDTO,
@@ -34,6 +28,7 @@ from talleyrand.features.research.context_builder import ResearchContext, build_
 from talleyrand.features.research.dtos import ContextSizeRequestDTO, ContextSizeResponseDTO
 from talleyrand.features.research.generation.manager import manager
 from talleyrand.features.research.prompts import RESEARCH_ANSWERER_INSTRUCTIONS
+from talleyrand.infra.local_user import current_user
 from talleyrand.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -78,9 +73,7 @@ def next_question_context(
 async def context_size(
     graph_id: UUID,
     payload: ContextSizeRequestDTO,
-    user: Annotated[User, Depends(auth_app.require_auth)],
-    x_openai_api_key: Annotated[str | None, Header()] = None,
-    x_anthropic_api_key: Annotated[str | None, Header()] = None,
+    user: Annotated[User, Depends(current_user)],
 ) -> ContextSizeResponseDTO:
     """Count the prompt the next question would send, against what its model accepts."""
     try:
@@ -102,27 +95,10 @@ async def context_size(
         model=model.id,
     )
     window = model.window
-
-    # Anthropic's counter needs the key the answer would use; without it, or
-    # when the count fails, tiktoken stands in and the meter says so.
-    api_key = x_anthropic_api_key if window.provider == "anthropic" else x_openai_api_key
-    estimated = window.provider == "anthropic" and not api_key
-    tokens: int | None = None
-    if not estimated:
-        try:
-            tokens = await count_prompt_tokens(
-                window, api_key or "", RESEARCH_ANSWERER_INSTRUCTIONS, context.text
-            )
-        except AnthropicAPIError as e:
-            logger.warning(
-                "Token count on %s failed, estimating with tiktoken: %s", window.api_model, e
-            )
-            estimated = True
-    if tokens is None:
-        tokens = await asyncio.to_thread(
-            count_tokens, RESEARCH_ANSWERER_INSTRUCTIONS + context.text, window.api_model
-        )
+    # The agent CLIs have no counter to ask: tiktoken estimates, and the meter
+    # says so.
+    tokens = await count_prompt_tokens(window, RESEARCH_ANSWERER_INSTRUCTIONS, context.text)
 
     return ContextSizeResponseDTO(
-        tokens=tokens, max_input_tokens=window.max_input_tokens, estimated=estimated
+        tokens=tokens, max_input_tokens=window.max_input_tokens, estimated=True
     )

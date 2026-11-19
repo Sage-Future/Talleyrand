@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from talleyrand.core.llm import parse_structured
-from talleyrand.core.model_settings import get_model_window
+from talleyrand.core.model_settings import auxiliary_window
 from talleyrand.core.prompts import TALLEYRAND_DESCRIPTION
 from talleyrand.features.graph.dtos import GraphNoId
 from talleyrand.features.research.context_builder import (
@@ -20,8 +20,7 @@ from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.dtos import BigPictureQuestionDTO
 
 MAX_SUGGESTIONS = 5
-SUGGESTER_MODEL = get_model_window("gpt-6-astra")
-SUGGESTER_REASONING_EFFORT = "medium"
+SUGGESTER_MODEL = auxiliary_window()
 
 Persona = Literal[
     "Scott Alexander",
@@ -96,7 +95,6 @@ class BigPictureSuggestionSchema(BaseModel):
 
 async def get_big_picture_suggestions(
     graph: GraphNoId,
-    openai_api_key: str,
     *,
     failed_node_ids: set[str] | None = None,
 ) -> list[BigPictureQuestionDTO]:
@@ -148,21 +146,16 @@ async def get_big_picture_suggestions(
     context = await fit_research_context(
         context,
         model=SUGGESTER_MODEL,
-        api_key=openai_api_key,
         system_prompt=instructions,
         tail="\n\n" + "\n\n".join(tail_sections),
     )
     parsed = await parse_structured(
         caller="big_picture_suggestions",
-        model=SUGGESTER_MODEL.api_model,
-        api_key=openai_api_key,
         system_prompt=instructions,
         user_content="\n\n".join([context.text, *tail_sections]),
         schema=BigPictureSuggestionSchema,
-        reasoning_effort=SUGGESTER_REASONING_EFFORT,
         # Web search lets the panel ground its questions in current real-world
         # developments, not just the case's own text.
-        web_search_enabled=True,
     )
 
     node_id_by_outline = {outline: tree_node_id for tree_node_id, outline in tree.outline.items()}

@@ -1,50 +1,33 @@
 from dataclasses import dataclass
 from typing import Literal, cast
 
+from talleyrand.core.config import settings
+
 type SupportedModel = Literal[
-    "gpt-5.6-luna",
-    "gpt-5.6-terra",
-    "gpt-6-astra-medium",
-    "gpt-6-astra-high",
-    "gpt-6-astra-max",
-    "claude-haiku-4-5",
-    "claude-sonnet-5",
-    "claude-fable-5-1-medium",
-    "claude-fable-5-1-high",
-    "claude-fable-5-1-max",
+    "claude-code-haiku-4-5",
+    "claude-code-sonnet-5-5",
+    "claude-code-opus-5-5",
+    "claude-code-fable-5-1",
+    "hermes-gpt-6-luna",
+    "hermes-gpt-6-sol",
+    "hermes-gpt-6-1-sol",
+    "hermes-gpt-6-astra",
 ]
 
-type Provider = Literal["openai", "anthropic"]
-
-# "none" is an explicit GPT-5.6 effort level meaning "do not reason at all" —
-# distinct from reasoning_effort=None, which means "send no effort parameter"
-# (the right thing for Claude Haiku, which rejects the parameter outright).
-# GPT-6 Astra does not accept "none": its ladder starts at "low".
-type ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh", "max"]
-
-# The output budget (max_tokens) every Anthropic request asks for. Anthropic
-# requires one, and input and output share the window, so the budget comes off
-# the input side of every Claude model's window. 64K fits under the output
-# ceiling of every supported Claude model; asking for more would leave less
-# room for the case.
-ANTHROPIC_MAX_OUTPUT_TOKENS = 64_000
+type Provider = Literal["claude_code", "hermes"]
 
 
 @dataclass(frozen=True)
 class ModelWindow:
     """
-    How much one API model reads and writes, per the provider's published limits.
+    How much one agent CLI reads and writes.
 
     Attributes:
-        provider: LLM provider serving the model.
-        api_model: The model name sent to the provider's API.
+        provider: The agent CLI.
+        api_model: The window's name, which ModelConfig.api_model refers to.
         context_tokens: The window that input and output share.
         max_output_tokens: The most the model may write in one response.
-        max_input_tokens: The most a request may carry; the provider rejects
-            anything larger. For OpenAI this is the published input ceiling,
-            enforced whatever output the request asks for. For Anthropic it is
-            the window less ANTHROPIC_MAX_OUTPUT_TOKENS, the output budget every
-            request here reserves.
+        max_input_tokens: The most a request may carry.
     """
 
     provider: Provider
@@ -54,64 +37,37 @@ class ModelWindow:
     max_input_tokens: int
 
 
-def _openai_window(
-    api_model: str, *, context_tokens: int, max_input_tokens: int, max_output_tokens: int
-) -> ModelWindow:
-    return ModelWindow(
-        provider="openai",
-        api_model=api_model,
-        context_tokens=context_tokens,
-        max_output_tokens=max_output_tokens,
-        max_input_tokens=max_input_tokens,
-    )
-
-
-def _anthropic_window(
-    api_model: str, *, context_tokens: int, max_output_tokens: int
-) -> ModelWindow:
-    return ModelWindow(
-        provider="anthropic",
-        api_model=api_model,
-        context_tokens=context_tokens,
-        max_output_tokens=max_output_tokens,
-        max_input_tokens=context_tokens - ANTHROPIC_MAX_OUTPUT_TOKENS,
-    )
-
-
-# One entry per API model, from the providers' model pages (checked 2026-09-14):
-#   https://developers.openai.com/api/docs/models/<model>
-#   https://docs.claude.com/en/docs/about-claude/models/overview
-# The frontend's models.ts mirrors max_input_tokens; a test keeps them equal.
+# Which model each CLI runs is the preset's (ModelConfig.agent_model), so these
+# are conservative budgets rather than a published window: a subscription plan
+# need not grant a model's full API window. 200K is the standard Claude window;
+# the input budget leaves room for the answer and for counting with tiktoken,
+# which runs low on Claude's tokenizer. The frontend's models.ts mirrors
+# max_input_tokens; a test keeps them equal.
 MODEL_WINDOWS: dict[str, ModelWindow] = {
-    "gpt-5.6-luna": _openai_window(
-        "gpt-5.6-luna",
-        context_tokens=1_050_000,
-        max_input_tokens=922_000,
-        max_output_tokens=128_000,
+    # The operator's `claude` CLI (core/claude_code.py).
+    "claude-code": ModelWindow(
+        provider="claude_code",
+        api_model="claude-code",
+        context_tokens=200_000,
+        max_output_tokens=32_000,
+        max_input_tokens=150_000,
     ),
-    "gpt-5.6-terra": _openai_window(
-        "gpt-5.6-terra",
-        context_tokens=1_050_000,
-        max_input_tokens=922_000,
-        max_output_tokens=128_000,
-    ),
-    "gpt-6-astra": _openai_window(
-        "gpt-6-astra", context_tokens=1_050_000, max_input_tokens=922_000, max_output_tokens=128_000
-    ),
-    "claude-haiku-4-5": _anthropic_window(
-        "claude-haiku-4-5", context_tokens=200_000, max_output_tokens=64_000
-    ),
-    "claude-sonnet-5": _anthropic_window(
-        "claude-sonnet-5", context_tokens=1_000_000, max_output_tokens=128_000
-    ),
-    "claude-fable-5-1": _anthropic_window(
-        "claude-fable-5-1", context_tokens=1_000_000, max_output_tokens=128_000
+    # The operator's `hermes` CLI (core/hermes.py).
+    "hermes": ModelWindow(
+        provider="hermes",
+        api_model="hermes",
+        context_tokens=200_000,
+        max_output_tokens=32_000,
+        max_input_tokens=150_000,
     ),
 }
 
+# The window each agent backend runs under.
+AGENT_PRESETS: dict[str, str] = {"claude_code": "claude-code", "hermes": "hermes"}
+
 
 def get_model_window(api_model: str) -> ModelWindow:
-    """The published limits of an API model; a name without an entry is a bug."""
+    """The limits of an agent CLI's window; a name without an entry is a bug."""
     try:
         return MODEL_WINDOWS[api_model]
     except KeyError:
@@ -119,24 +75,26 @@ def get_model_window(api_model: str) -> ModelWindow:
         raise ValueError(f"No context window recorded for '{api_model}'. Known: {known}") from None
 
 
+def auxiliary_window() -> ModelWindow:
+    """
+    The window the agent's own work (kickstart, suggestions, reports) fits its
+    prompt to: that of settings.agent_backend, which runs it.
+    """
+    return MODEL_WINDOWS[AGENT_PRESETS[settings.agent_backend]]
+
+
 @dataclass
 class ModelConfig:
     """
-    A model preset the user can pick: an API model at one reasoning effort.
+    A model preset the user can pick: one model on one agent CLI.
 
     Attributes:
         id (SupportedModel): Unique preset identifier used in the UI and config lookups.
-        api_model (str): The API model the preset runs on; its limits are in MODEL_WINDOWS.
+        api_model (str): The agent CLI's window in MODEL_WINDOWS.
         label (str): Human-readable display name for the model.
         description (str): Detailed description of the model's capabilities and use cases.
         order (int): Sort order for displaying models in user interfaces.
-        reasoning_effort: Level of computational effort the model applies to reasoning tasks.
-        refusal_fallback: Whether to let Anthropic re-run a refused request on a stand-in
-            model. Only set for models whose safety classifiers can decline a request
-            outright; the substitution is announced in the answer (see core/llm.py).
-        plain_prose: Whether to tell the model to prefer a literal phrase over metaphor
-            and flourish. Set for models whose answers otherwise read as mannered; the
-            instruction itself lives in core/llm.py.
+        agent_model (str): The model answers ask the CLI for (`--model`).
     """
 
     id: SupportedModel
@@ -144,9 +102,7 @@ class ModelConfig:
     label: str
     description: str
     order: int
-    reasoning_effort: ReasoningEffort | None
-    refusal_fallback: bool = False
-    plain_prose: bool = False
+    agent_model: str
 
     @property
     def window(self) -> ModelWindow:
@@ -161,92 +117,73 @@ class ModelConfig:
         return self.window.max_input_tokens
 
 
+# One preset per model the signed-in subscriptions offer, fastest first. Model
+# names checked 2026-09-30 against the Claude Code changelog and the live
+# openai-codex list Hermes fetches (`hermes model`).
 MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
-    "gpt-5.6-luna": ModelConfig(
-        id="gpt-5.6-luna",
-        api_model="gpt-5.6-luna",
-        label="GPT-5.6 Luna",
-        description="Fastest, most economical",
-        order=1,
-        reasoning_effort="none",
-    ),
-    "gpt-5.6-terra": ModelConfig(
-        id="gpt-5.6-terra",
-        api_model="gpt-5.6-terra",
-        label="GPT-5.6 Terra",
-        description="Balanced performance",
-        order=2,
-        reasoning_effort="medium",
-    ),
-    "gpt-6-astra-medium": ModelConfig(
-        id="gpt-6-astra-medium",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra medium",
-        description="Most capable",
-        order=3,
-        reasoning_effort="medium",
-    ),
-    "gpt-6-astra-high": ModelConfig(
-        id="gpt-6-astra-high",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra high",
-        description="High-quality reasoning",
-        order=4,
-        reasoning_effort="high",
-    ),
-    "gpt-6-astra-max": ModelConfig(
-        id="gpt-6-astra-max",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra max",
-        description="Deepest reasoning (max)",
-        order=5,
-        reasoning_effort="max",
-    ),
-    "claude-haiku-4-5": ModelConfig(
-        id="claude-haiku-4-5",
-        api_model="claude-haiku-4-5",
+    "claude-code-haiku-4-5": ModelConfig(
+        id="claude-code-haiku-4-5",
+        api_model="claude-code",
         label="Claude Haiku 4.5",
-        description="Fastest Claude",
+        description="Fastest Claude, on your Claude subscription",
+        order=1,
+        agent_model="claude-haiku-4-5",
+    ),
+    "claude-code-sonnet-5-5": ModelConfig(
+        id="claude-code-sonnet-5-5",
+        api_model="claude-code",
+        label="Claude Sonnet 5.5",
+        description="Balanced Claude, on your Claude subscription",
+        order=2,
+        agent_model="claude-sonnet-5-5",
+    ),
+    "claude-code-opus-5-5": ModelConfig(
+        id="claude-code-opus-5-5",
+        api_model="claude-code",
+        label="Claude Opus 5.5",
+        description="Strongest Opus, on your Claude subscription",
+        order=3,
+        agent_model="claude-opus-5-5",
+    ),
+    "claude-code-fable-5-1": ModelConfig(
+        id="claude-code-fable-5-1",
+        api_model="claude-code",
+        label="Claude Fable 5.1",
+        description="Most capable Claude, on your Claude subscription",
+        order=4,
+        agent_model="claude-fable-5-1",
+    ),
+    "hermes-gpt-6-luna": ModelConfig(
+        id="hermes-gpt-6-luna",
+        api_model="hermes",
+        label="GPT-6 Luna",
+        description="Fastest GPT, on your ChatGPT subscription",
+        order=5,
+        agent_model="gpt-6-luna",
+    ),
+    "hermes-gpt-6-sol": ModelConfig(
+        id="hermes-gpt-6-sol",
+        api_model="hermes",
+        label="GPT-6 Sol",
+        description="Balanced GPT, on your ChatGPT subscription",
         order=6,
-        reasoning_effort=None,
+        agent_model="gpt-6-sol",
     ),
-    "claude-sonnet-5": ModelConfig(
-        id="claude-sonnet-5",
-        api_model="claude-sonnet-5",
-        label="Claude Sonnet 5",
-        description="Balanced Claude",
+    "hermes-gpt-6-1-sol": ModelConfig(
+        id="hermes-gpt-6-1-sol",
+        api_model="hermes",
+        label="GPT-6.1 Sol",
+        description="Newest Sol, on your ChatGPT subscription",
         order=7,
-        reasoning_effort="medium",
+        agent_model="gpt-6.1-sol",
     ),
-    "claude-fable-5-1-medium": ModelConfig(
-        id="claude-fable-5-1-medium",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 medium",
-        description="Most capable Claude",
+    "hermes-gpt-6-astra": ModelConfig(
+        id="hermes-gpt-6-astra",
+        api_model="hermes",
+        label="GPT-6 Astra",
+        description="Most capable GPT, on your ChatGPT subscription",
         order=8,
-        reasoning_effort="medium",
-        refusal_fallback=True,
-        plain_prose=True,
-    ),
-    "claude-fable-5-1-high": ModelConfig(
-        id="claude-fable-5-1-high",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 high",
-        description="High-quality reasoning",
-        order=9,
-        reasoning_effort="high",
-        refusal_fallback=True,
-        plain_prose=True,
-    ),
-    "claude-fable-5-1-max": ModelConfig(
-        id="claude-fable-5-1-max",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 max",
-        description="Deepest reasoning (max)",
-        order=10,
-        reasoning_effort="max",
-        refusal_fallback=True,
-        plain_prose=True,
+        agent_model="gpt-6-astra",
     ),
 }
 
@@ -264,27 +201,43 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
 # The map is one hop deep: when a replacement is itself retired, every entry
 # that pointed at it is re-pointed at the new replacement.
 RETIRED_MODELS: dict[str, SupportedModel] = {
-    # Retired 2026-08-18 for the GPT-5.6 family, whose Sol tier has since
-    # given way to GPT-6 Astra
-    "gpt-5.4-nano-2026-03-17": "gpt-5.6-luna",
-    "gpt-5.4-mini-2026-03-17": "gpt-5.6-terra",
-    "gpt-5.5-medium": "gpt-6-astra-medium",
-    "gpt-5.5-high": "gpt-6-astra-high",
-    "gpt-5.5-xhigh": "gpt-6-astra-max",
-    # Retired 2026-08-18 for Claude 5, whose Opus tier has since given way to
-    # Claude Fable 5.1
-    "claude-sonnet-4-6": "claude-sonnet-5",
-    "claude-opus-4-8-medium": "claude-fable-5-1-medium",
-    "claude-opus-4-8-high": "claude-fable-5-1-high",
-    "claude-opus-4-8-xhigh": "claude-fable-5-1-max",
+    # The API-key presets, retired 2026-09-30 with the hosted deployment for
+    # the same model (or its successor) on the matching agent CLI: GPT on
+    # Hermes, Claude on Claude Code.
+    "gpt-5.6-luna": "hermes-gpt-6-luna",
+    "gpt-5.6-terra": "hermes-gpt-6-sol",
+    "gpt-6-astra-medium": "hermes-gpt-6-astra",
+    "gpt-6-astra-high": "hermes-gpt-6-astra",
+    "gpt-6-astra-max": "hermes-gpt-6-astra",
+    "claude-haiku-4-5": "claude-code-haiku-4-5",
+    "claude-sonnet-5": "claude-code-sonnet-5-5",
+    "claude-fable-5-1-medium": "claude-code-fable-5-1",
+    "claude-fable-5-1-high": "claude-code-fable-5-1",
+    "claude-fable-5-1-max": "claude-code-fable-5-1",
+    # Retired 2026-08-18 for the GPT-5.6 family
+    "gpt-5.4-nano-2026-03-17": "hermes-gpt-6-luna",
+    "gpt-5.4-mini-2026-03-17": "hermes-gpt-6-sol",
+    "gpt-5.5-medium": "hermes-gpt-6-astra",
+    "gpt-5.5-high": "hermes-gpt-6-astra",
+    "gpt-5.5-xhigh": "hermes-gpt-6-astra",
+    # Retired 2026-08-18 for Claude 5
+    "claude-sonnet-4-6": "claude-code-sonnet-5-5",
+    "claude-opus-4-8-medium": "claude-code-fable-5-1",
+    "claude-opus-4-8-high": "claude-code-fable-5-1",
+    "claude-opus-4-8-xhigh": "claude-code-fable-5-1",
     # Retired 2026-09-09, replaced by GPT-6 Astra
-    "gpt-5.6-sol-medium": "gpt-6-astra-medium",
-    "gpt-5.6-sol-high": "gpt-6-astra-high",
-    "gpt-5.6-sol-max": "gpt-6-astra-max",
+    "gpt-5.6-sol-medium": "hermes-gpt-6-astra",
+    "gpt-5.6-sol-high": "hermes-gpt-6-astra",
+    "gpt-5.6-sol-max": "hermes-gpt-6-astra",
     # Retired 2026-09-09, replaced by Claude Fable 5.1
-    "claude-opus-5-medium": "claude-fable-5-1-medium",
-    "claude-opus-5-high": "claude-fable-5-1-high",
-    "claude-opus-5-max": "claude-fable-5-1-max",
+    "claude-opus-5-medium": "claude-code-fable-5-1",
+    "claude-opus-5-high": "claude-code-fable-5-1",
+    "claude-opus-5-max": "claude-code-fable-5-1",
+    # Retired 2026-09-30: one preset per agent became one per model it can run.
+    # Each ran settings.claude_code_model / settings.hermes_model, by default
+    # these two.
+    "claude-code": "claude-code-sonnet-5-5",
+    "hermes": "hermes-gpt-6-astra",
 }
 
 

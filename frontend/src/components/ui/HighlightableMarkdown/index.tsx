@@ -35,16 +35,11 @@ function renderKatex(latex: string, displayMode: boolean): string {
 interface HighlightableMarkdownProps {
   content: string;
   annotations?: Annotation[];
-  /** Chip renderer for [[<node id>]] / [[1.2]] tokens; surfaces without the
-   *  research stores (the shared case viewer) substitute one wired to their
-   *  own data. */
-  questionRefComponent?: typeof QuestionRef;
 }
 
 export const HighlightableMarkdown: React.FC<HighlightableMarkdownProps> = ({
   content,
   annotations = [],
-  questionRefComponent = QuestionRef,
 }) => {
   // Merge overlapping annotations
   const segmentsByBlock = useMemo(() => {
@@ -67,7 +62,7 @@ export const HighlightableMarkdown: React.FC<HighlightableMarkdownProps> = ({
     () =>
       ({
         highlightMark: HighlightMark,
-        questionRef: questionRefComponent,
+        questionRef: QuestionRef,
         a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
         code: ({ className, children, ...props }: any) => {
           const classes = className?.split(' ') ?? [];
@@ -117,7 +112,7 @@ export const HighlightableMarkdown: React.FC<HighlightableMarkdownProps> = ({
           return <pre {...props}>{children}</pre>;
         },
       }) as any,
-    [questionRefComponent]
+    []
   );
 
   return (

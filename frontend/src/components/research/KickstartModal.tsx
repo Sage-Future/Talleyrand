@@ -1,6 +1,5 @@
 import { FC, RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { isProviderKeyConfigured } from '../../client';
 import { useNodeContentStore } from '../../stores/nodeContentStore';
 import { useResearchStore } from '../../stores/researchStore';
 import { useUIStateStore } from '../../stores/uiStateStore';
@@ -13,7 +12,6 @@ import {
 } from '../../services/researchKickstartService';
 import { DECLINE_REASONS } from './declineReasons';
 import { DocumentLibrary } from '../ui/DocumentLibrary';
-import { DictateButton } from '../ui/DictateButton';
 import type { DeclineReason, Document } from '../../types';
 import { iconTooltip } from '../ui/TooltipLayer';
 
@@ -77,28 +75,14 @@ const SectionLabel: FC<{ children: string }> = ({ children }) => (
   </span>
 );
 
-/**
- * One section's failure, inline. Without the OpenAI key a retry can only fail
- * again, so then "Add API key" leads and opens Settings — the same way out the
- * answer view offers when its generation fails for lack of a key.
- */
+/** One section's failure, inline. */
 const KickstartError: FC<{
   message: string;
   onRetry: () => void;
-  onAddApiKey?: () => void;
-}> = ({ message, onRetry, onAddApiKey }) => (
+}> = ({ message, onRetry }) => (
   <div className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2">
     <span className="min-w-0 text-[12px] text-rose-700">{message}</span>
     <div className="flex flex-shrink-0 items-center gap-1.5">
-      {onAddApiKey && (
-        <button
-          onClick={onAddApiKey}
-          className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-medium text-white transition-colors hover:bg-rose-700"
-          data-testid="kickstart-add-api-key"
-        >
-          Add API key
-        </button>
-      )}
       <button
         onClick={onRetry}
         className="rounded border border-rose-200 bg-white px-2 py-0.5 text-[11px] text-rose-700 transition-colors hover:bg-rose-50"
@@ -409,21 +393,8 @@ interface KickstartModalProps {
 export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
   const applyKickstart = useResearchStore(s => s.applyKickstart);
   const settingsOpen = useUIStateStore(s => s.showSettingsModal);
-  const setShowSettingsModal = useUIStateStore(s => s.setShowSettingsModal);
-  // Both generations run on OpenAI, so without that key neither can succeed:
-  // adding it — not retrying — is the way out of the error. Re-read whenever
-  // the settings modal opens or closes, so a key added there is seen at once.
-  const needsApiKey = !settingsOpen && !isProviderKeyConfigured('openai');
 
   const [notes, setNotes] = useState('');
-
-  // Dictation: append transcribed speech to whatever is already in the notes.
-  const [dictationError, setDictationError] = useState<string | null>(null);
-  const appendDictation = useCallback((text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    setNotes(prev => (prev.trim() ? `${prev.replace(/\s+$/, '')} ${trimmed}` : trimmed));
-  }, []);
 
   const [documents, setDocuments] = useState<Document[]>(
     () => useResearchStore.getState().caseDocuments
@@ -677,11 +648,6 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                   </svg>
                   {documents.length > 0 ? `${documents.length} attached` : 'Attach'}
                 </button>
-                <DictateButton
-                  onTranscript={appendDictation}
-                  onError={setDictationError}
-                  testId="kickstart-dictate"
-                />
               </div>
               {!generated && (
                 <button
@@ -695,9 +661,6 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                 </button>
               )}
             </div>
-            {dictationError && (
-              <p className="mt-1 px-1 text-[11px] text-red-600">{dictationError}</p>
-            )}
           </div>
 
           {/* Brief */}
@@ -734,11 +697,7 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                   </div>
                 </div>
               ) : briefError ? (
-                <KickstartError
-                  message={briefError}
-                  onRetry={() => void runBrief()}
-                  onAddApiKey={needsApiKey ? () => setShowSettingsModal(true) : undefined}
-                />
+                <KickstartError message={briefError} onRetry={() => void runBrief()} />
               ) : (
                 <textarea
                   ref={briefTextareaRef}
@@ -808,7 +767,6 @@ export const KickstartModal: FC<KickstartModalProps> = ({ onClose }) => {
                   <KickstartError
                     message={questionsError}
                     onRetry={() => void runQuestions(lastRequestMoreRef.current)}
-                    onAddApiKey={needsApiKey ? () => setShowSettingsModal(true) : undefined}
                   />
                 )}
 

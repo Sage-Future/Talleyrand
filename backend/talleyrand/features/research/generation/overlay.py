@@ -91,6 +91,7 @@ def _force_open(content: NodeContentDTO) -> None:
     # The sources describe an answer that is no longer on the page.
     content.sources = []
     content.sources_found = 0
+    content.execution = None
 
 
 def _force_answer(content: NodeContentDTO, record: GenerationJobRecord) -> None:
@@ -98,6 +99,7 @@ def _force_answer(content: NodeContentDTO, record: GenerationJobRecord) -> None:
     content.answered_at = record.answered_at
     content.sources = record.sources
     content.sources_found = record.sources_found
+    content.execution = record.execution
 
 
 def _apply_answer_record(

@@ -1,12 +1,4 @@
-import {
-  FC,
-  KeyboardEvent,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { FC, KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { MODELS } from '../../config/models';
 import { useNextQuestionContextSize } from '../../hooks/useNextQuestionContextSize';
 import { useGraphStructureStore } from '../../stores/graphStructureStore';
@@ -14,7 +6,6 @@ import { useNodeContentStore } from '../../stores/nodeContentStore';
 import { useResearchStore } from '../../stores/researchStore';
 import { nodeDocumentBytes, totalDocumentBytes } from '../../utils/documentBudget';
 import { insertNewline } from '../../utils/insertNewline';
-import { DictateButton } from '../ui/DictateButton';
 import { DocumentLibrary } from '../ui/DocumentLibrary';
 import { ModelPicker } from '../ui/ModelPicker';
 import type { Document, TextSelection } from '../../types';
@@ -61,7 +52,7 @@ const ModelSelect: FC = () => {
         </svg>
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-30 mb-1.5 w-64 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
+        <div className="absolute bottom-full left-0 z-30 mb-1.5 w-80 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
           <div className="border-b border-stone-100 bg-stone-50 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-stone-400">
             Model for new questions
           </div>
@@ -115,7 +106,6 @@ const ContextGauge: FC<{
   let tooltip = 'Counting the context for the next question…';
   if (tokens !== null) {
     tooltip = `${size?.estimated ? 'Estimated' : 'Counted'} context for the next question: ${formatTokens(tokens)} of ${formatTokens(limit)} tokens`;
-    if (size?.estimated) tooltip += ' (add an Anthropic API key in Settings for an exact count)';
     if (usage > 1) tooltip += '. The documents will be cut to fit.';
   }
 
@@ -169,15 +159,7 @@ export const ThreadInput: FC = () => {
     sourceNodeId: string;
   } | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [dictationError, setDictationError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Dictation: append transcribed speech to whatever is already in the draft.
-  const appendDictation = useCallback((text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    setValue(prev => (prev.trim() ? `${prev.replace(/\s+$/, '')} ${trimmed}` : trimmed));
-  }, []);
 
   const cursorNodeId = useResearchStore(s => s.cursorNodeId);
   const composingRoot = useResearchStore(s => s.composingRoot);
@@ -348,12 +330,6 @@ export const ThreadInput: FC = () => {
                 </svg>
                 {pendingDocuments.length > 0 ? `${pendingDocuments.length} attached` : 'Attach'}
               </button>
-              <DictateButton
-                onTranscript={appendDictation}
-                onError={setDictationError}
-                disabled={!enabled}
-                testId="thread-dictate"
-              />
               <ContextGauge
                 draftQuery={value}
                 draftDocuments={pendingDocuments}
@@ -378,9 +354,6 @@ export const ThreadInput: FC = () => {
           </div>
         </div>
         {hint && <div className="mt-1.5 px-1 text-[11px] text-stone-400">{hint}</div>}
-        {dictationError && (
-          <div className="mt-1.5 px-1 text-[11px] text-red-600">{dictationError}</div>
-        )}
       </div>
 
       {showLibrary && (

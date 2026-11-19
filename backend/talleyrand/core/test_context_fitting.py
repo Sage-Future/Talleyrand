@@ -13,7 +13,7 @@ from talleyrand.core import llm as llm_module
 from talleyrand.core.llm import TRIM_STEP_CHARS, TRIMMED_NOTICE, fit_to_context
 from talleyrand.core.model_settings import get_model_config
 
-MODEL = get_model_config("claude-fable-5-1-max").window
+MODEL = get_model_config("claude-code-fable-5-1").window
 # The stub below counts four characters to the token, so a window in tokens is
 # four times as many characters of prompt.
 CHARS_PER_TOKEN = 4
@@ -25,18 +25,13 @@ BODY = "CASE TREE (fixed order; the user's case so far):\n[1] QUESTION: Does it 
 
 @pytest.fixture
 def counted(monkeypatch):
-    """Count tokens without a provider: four characters to the token."""
-
-    async def count(_client, _model, system_prompt, user_prompt) -> int:
-        return len(system_prompt + user_prompt) // CHARS_PER_TOKEN
-
-    monkeypatch.setattr(llm_module, "_count_anthropic_tokens", count)
+    """Count tokens without tiktoken: four characters to the token."""
+    monkeypatch.setattr(llm_module, "count_tokens", lambda text: len(text) // CHARS_PER_TOKEN)
 
 
 async def fit(documents: str, body: str = BODY, brief: str = BRIEF) -> str:
     return await fit_to_context(
         model=MODEL,
-        api_key="unused",
         system_prompt="INSTRUCTIONS",
         keep_before=brief,
         trimmable=documents,

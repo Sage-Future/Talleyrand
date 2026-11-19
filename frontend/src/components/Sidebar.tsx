@@ -2,12 +2,10 @@ import React, { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import type { GraphMetadata } from '../types';
 import * as autosaveService from '../services/autosaveService';
-import * as shareService from '../services/shareService';
 import { generateFilename, saveToFile, loadFromFile, parseCaseFile } from '../utils/fileOperations';
 import { useGraphStructureStore } from '../stores/graphStructureStore';
 import { GRAPH_AUTO_NAMED_EVENT, cancelPendingAutosave } from '../services/autosaveSubscriptions';
 import { iconTooltip } from './ui/TooltipLayer';
-import { ShareCaseModal } from './ShareCaseModal';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -32,9 +30,6 @@ const SidebarComponent: FC<SidebarProps> = ({
   const [graphs, setGraphs] = useState<GraphMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hoveredGraphId, setHoveredGraphId] = useState<string | null>(null);
-  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
-  // The case awaiting the owner's go-ahead to go public.
-  const [pendingShare, setPendingShare] = useState<GraphMetadata | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -170,52 +165,6 @@ const SidebarComponent: FC<SidebarProps> = ({
     }
   };
 
-  const setShared = (graphId: string, shared: boolean) => {
-    setGraphs(prev => prev.map(g => (g.id === graphId ? { ...g, shared } : g)));
-  };
-
-  const copyShareLink = async (graphId: string) => {
-    await navigator.clipboard.writeText(`${window.location.origin}/shared/${graphId}`);
-    setShareFeedback(graphId);
-    setTimeout(() => setShareFeedback(null), 2000);
-  };
-
-  // A shared case just re-copies its link; a private one first shows what
-  // going public hands over.
-  const handleShareGraph = async (graph: GraphMetadata, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!graph.shared) {
-      setPendingShare(graph);
-      return;
-    }
-    try {
-      await copyShareLink(graph.id);
-    } catch {
-      alert('Failed to copy the share link. Please try again.');
-    }
-  };
-
-  const handleConfirmShare = async (graphId: string) => {
-    setPendingShare(null);
-    try {
-      await shareService.shareGraph(graphId);
-      setShared(graphId, true);
-      await copyShareLink(graphId);
-    } catch {
-      alert('Failed to share graph. Please try again.');
-    }
-  };
-
-  const handleRevokeShare = async (graphId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await shareService.revokeShare(graphId);
-      setShared(graphId, false);
-    } catch {
-      alert('Failed to stop sharing. Please try again.');
-    }
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -308,86 +257,12 @@ const SidebarComponent: FC<SidebarProps> = ({
                         </h3>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-stone-400">
                           {graph.createdAt && <span>{formatDate(graph.createdAt)}</span>}
-                          {/* A public case says so at rest, not only on hover */}
-                          {graph.shared && (
-                            <span
-                              className="inline-flex items-center gap-0.5 text-orange-700"
-                              data-tooltip={
-                                graph.documentNames.length > 0
-                                  ? `Anyone with the link can read this case and its ${graph.documentNames.length} attached file${graph.documentNames.length === 1 ? '' : 's'}`
-                                  : 'Anyone with the link can read this case'
-                              }
-                            >
-                              <svg
-                                className="h-2.5 w-2.5"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2.5}
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-9a13 13 0 000 18m0-18a13 13 0 010 18M3.6 9h16.8M3.6 15h16.8"
-                                />
-                              </svg>
-                              Shared
-                            </span>
-                          )}
                         </div>
                       </div>
 
                       {/* Action buttons shown on hover */}
                       {hoveredGraphId === graph.id && (
                         <div className="ml-2 flex gap-0.5">
-                          {shareFeedback === graph.id ? (
-                            <span className="whitespace-nowrap p-1 text-[11px] font-medium text-orange-700">
-                              Link copied
-                            </span>
-                          ) : (
-                            <>
-                              <button
-                                onClick={e => handleShareGraph(graph, e)}
-                                className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-stone-700"
-                                {...iconTooltip(graph.shared ? 'Copy share link' : 'Share')}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                                  />
-                                </svg>
-                              </button>
-                              {graph.shared && (
-                                <button
-                                  onClick={e => handleRevokeShare(graph.id, e)}
-                                  className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-rose-600"
-                                  {...iconTooltip('Stop sharing')}
-                                >
-                                  <svg
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                                    />
-                                  </svg>
-                                </button>
-                              )}
-                            </>
-                          )}
                           <button
                             onClick={e =>
                               handleRenameGraph(graph.id, graph.name || 'Untitled case', e)
@@ -531,15 +406,6 @@ const SidebarComponent: FC<SidebarProps> = ({
             />
           </svg>
         </button>
-      )}
-
-      {pendingShare && (
-        <ShareCaseModal
-          caseName={pendingShare.name || 'Untitled case'}
-          documentNames={pendingShare.documentNames}
-          onConfirm={() => handleConfirmShare(pendingShare.id)}
-          onClose={() => setPendingShare(null)}
-        />
       )}
     </>
   );
