@@ -4,8 +4,8 @@
 [metadata]
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
-lock_version = "4.5.0"
-content_hash = "sha256:267567f8f8b77f188b35b9961f20289ebd12f37844a4c34a506d0669fadb7daa"
+lock_version = "4.5.1"
+content_hash = "sha256:243fbc24f625e93832f4423042bd3af1af6b3ec08496311ed65a32b69fc41e95"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -26,7 +26,7 @@ files = [
 
 [[package]]
 name = "anthropic"
-version = "0.116.0"
+version = "0.125.0"
 requires_python = ">=3.9"
 summary = "The official Python library for the anthropic API"
 groups = ["default"]
@@ -37,12 +37,12 @@ dependencies = [
     "httpx<1,>=0.25.0",
     "jiter<1,>=0.4.0",
     "pydantic<3,>=1.9.0",
-    "sniffio",
+    "sniffio<2,>=1",
     "typing-extensions<5,>=4.14",
 ]
 files = [
-    {file = "anthropic-0.116.0-py3-none-any.whl", hash = "sha256:6c0a7698e8d652455da3499978279bb2588c7264d0a35be3666009a4258c8256"},
-    {file = "anthropic-0.116.0.tar.gz", hash = "sha256:5fc248fbb9fe03ef686f8a774f81586bca31a043260aab88b387ea3660f4a396"},
+    {file = "anthropic-0.125.0-py3-none-any.whl", hash = "sha256:3486013602eca76d8b12540764e53654f02cf4951110bca86cf06e67428a9f21"},
+    {file = "anthropic-0.125.0.tar.gz", hash = "sha256:e0cdd336580cb7411c1cdab69f80973e9bf4bff7f8e08141811d46307d45c682"},
 ]
 
 [[package]]

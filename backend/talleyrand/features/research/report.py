@@ -28,7 +28,7 @@ from talleyrand.features.research.context_fitting import fit_research_context
 from talleyrand.features.research.dtos import ReportRequestDTO, ReportResponseDTO
 from talleyrand.features.research.ref_tokens import outline_ref_tokens
 
-REPORT_MODEL = get_model_window("gpt-6-astra")
+REPORT_MODEL = get_model_window("gpt-6.2-astra")
 REPORT_REASONING_EFFORT = "xhigh"
 
 INSTRUCTIONS = (

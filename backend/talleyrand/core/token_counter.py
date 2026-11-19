@@ -12,7 +12,7 @@ def get_encoding_for_model(api_model: str) -> tiktoken.Encoding:
     """
     The tiktoken encoding to count an OpenAI model's prompt with.
 
-    tiktoken ships no entry for the GPT-5.6 or GPT-6 families, so every
+    tiktoken ships no entry for the GPT-6 family, so every
     OpenAI model is counted with o200k_base, the newest encoding it has. The
     count decides how much of an oversized prompt to trim and what the context
     meter shows, so a close approximation is enough.
@@ -24,7 +24,7 @@ def get_encoding_for_model(api_model: str) -> tiktoken.Encoding:
         tiktoken.Encoding instance for the model
     """
     # o200k_base is the encoding tiktoken knows for GPT-4o and GPT-5; the
-    # GPT-5.6 and GPT-6 Astra models have no entry of their own.
+    # GPT-6 models have no entry of their own.
     return tiktoken.get_encoding("o200k_base")
 
 

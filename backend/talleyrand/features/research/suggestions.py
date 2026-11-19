@@ -22,7 +22,7 @@ from talleyrand.features.research.dtos import (
 )
 
 MAX_SUGGESTIONS = 3
-SUGGESTER_MODEL = get_model_window("gpt-6-astra")
+SUGGESTER_MODEL = get_model_window("gpt-6.2-astra")
 SUGGESTER_REASONING_EFFORT = "low"
 
 INSTRUCTIONS = (

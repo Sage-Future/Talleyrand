@@ -122,7 +122,7 @@ def _fallback(to_model: str) -> BetaRawContentBlockStartEvent:
             type="fallback",
             to=BetaFallbackInfo(model=to_model),
             trigger=BetaFallbackRefusalTrigger(type="refusal"),
-            **{"from": BetaFallbackInfo(model="claude-fable-5-1")},
+            **{"from": BetaFallbackInfo(model="claude-fable-5-2")},
         ),
     )
 
