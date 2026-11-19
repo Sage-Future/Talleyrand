@@ -38,7 +38,7 @@ def sent(monkeypatch) -> dict:
 async def send(cached_prefix: str, sent: dict) -> list[dict]:
     await stream_text(
         caller="test",
-        model=get_model_config("claude-fable-5-1-max"),
+        model=get_model_config("claude-fable-5-2-max"),
         api_key="unused",
         instructions="INSTRUCTIONS",
         cached_prefix=cached_prefix,

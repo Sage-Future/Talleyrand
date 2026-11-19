@@ -2,24 +2,23 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 type SupportedModel = Literal[
-    "gpt-5.6-luna",
-    "gpt-5.6-terra",
-    "gpt-6-astra-medium",
-    "gpt-6-astra-high",
-    "gpt-6-astra-max",
-    "claude-haiku-4-5",
-    "claude-sonnet-5",
-    "claude-fable-5-1-medium",
-    "claude-fable-5-1-high",
-    "claude-fable-5-1-max",
+    "gpt-6-luna",
+    "gpt-6.2-sol",
+    "gpt-6.2-astra-medium",
+    "gpt-6.2-astra-high",
+    "gpt-6.2-astra-max",
+    "claude-haiku-5-5",
+    "claude-sonnet-5-5",
+    "claude-fable-5-2-medium",
+    "claude-fable-5-2-high",
+    "claude-fable-5-2-max",
 ]
 
 type Provider = Literal["openai", "anthropic"]
 
-# "none" is an explicit GPT-5.6 effort level meaning "do not reason at all" —
-# distinct from reasoning_effort=None, which means "send no effort parameter"
-# (the right thing for Claude Haiku, which rejects the parameter outright).
-# GPT-6 Astra does not accept "none": its ladder starts at "low".
+# "none" is an explicit GPT-6 Luna effort level meaning "do not reason at all".
+# GPT-6.2 Sol and Astra reject it: their ladder starts at "low". Claude models
+# take "low" through "max".
 type ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh", "max"]
 
 # The output budget (max_tokens) every Anthropic request asks for. Anthropic
@@ -78,34 +77,31 @@ def _anthropic_window(
     )
 
 
-# One entry per API model, from the providers' model pages (checked 2026-09-14):
+# One entry per API model, from the providers' model pages (checked 2026-11-19):
 #   https://developers.openai.com/api/docs/models/<model>
 #   https://docs.claude.com/en/docs/about-claude/models/overview
 # The frontend's models.ts mirrors max_input_tokens; a test keeps them equal.
 MODEL_WINDOWS: dict[str, ModelWindow] = {
-    "gpt-5.6-luna": _openai_window(
-        "gpt-5.6-luna",
+    "gpt-6-luna": _openai_window(
+        "gpt-6-luna", context_tokens=1_050_000, max_input_tokens=922_000, max_output_tokens=128_000
+    ),
+    "gpt-6.2-sol": _openai_window(
+        "gpt-6.2-sol", context_tokens=1_050_000, max_input_tokens=922_000, max_output_tokens=128_000
+    ),
+    "gpt-6.2-astra": _openai_window(
+        "gpt-6.2-astra",
         context_tokens=1_050_000,
         max_input_tokens=922_000,
         max_output_tokens=128_000,
     ),
-    "gpt-5.6-terra": _openai_window(
-        "gpt-5.6-terra",
-        context_tokens=1_050_000,
-        max_input_tokens=922_000,
-        max_output_tokens=128_000,
+    "claude-haiku-5-5": _anthropic_window(
+        "claude-haiku-5-5", context_tokens=1_000_000, max_output_tokens=128_000
     ),
-    "gpt-6-astra": _openai_window(
-        "gpt-6-astra", context_tokens=1_050_000, max_input_tokens=922_000, max_output_tokens=128_000
+    "claude-sonnet-5-5": _anthropic_window(
+        "claude-sonnet-5-5", context_tokens=1_000_000, max_output_tokens=128_000
     ),
-    "claude-haiku-4-5": _anthropic_window(
-        "claude-haiku-4-5", context_tokens=200_000, max_output_tokens=64_000
-    ),
-    "claude-sonnet-5": _anthropic_window(
-        "claude-sonnet-5", context_tokens=1_000_000, max_output_tokens=128_000
-    ),
-    "claude-fable-5-1": _anthropic_window(
-        "claude-fable-5-1", context_tokens=1_000_000, max_output_tokens=128_000
+    "claude-fable-5-2": _anthropic_window(
+        "claude-fable-5-2", context_tokens=1_000_000, max_output_tokens=128_000
     ),
 }
 
@@ -131,9 +127,13 @@ class ModelConfig:
         description (str): Detailed description of the model's capabilities and use cases.
         order (int): Sort order for displaying models in user interfaces.
         reasoning_effort: Level of computational effort the model applies to reasoning tasks.
+            Always sent: every supported model reasons by default, at a level that differs
+            by model, so leaving it out would hand the choice to the provider.
         refusal_fallback: Whether to let Anthropic re-run a refused request on a stand-in
-            model. Only set for models whose safety classifiers can decline a request
-            outright; the substitution is announced in the answer (see core/llm.py).
+            model. Set for the models Anthropic offers a server-side fallback for; the
+            substitution is announced in the answer (see core/llm.py). Claude Haiku 5.5
+            can decline too but has no fallback, so its refusals reach the reader as a
+            notice instead.
         plain_prose: Whether to tell the model to prefer a literal phrase over metaphor
             and flourish. Set for models whose answers otherwise read as mannered; the
             instruction itself lives in core/llm.py.
@@ -144,7 +144,7 @@ class ModelConfig:
     label: str
     description: str
     order: int
-    reasoning_effort: ReasoningEffort | None
+    reasoning_effort: ReasoningEffort
     refusal_fallback: bool = False
     plain_prose: bool = False
 
@@ -162,86 +162,88 @@ class ModelConfig:
 
 
 MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
-    "gpt-5.6-luna": ModelConfig(
-        id="gpt-5.6-luna",
-        api_model="gpt-5.6-luna",
-        label="GPT-5.6 Luna",
+    "gpt-6-luna": ModelConfig(
+        id="gpt-6-luna",
+        api_model="gpt-6-luna",
+        label="GPT-6 Luna",
         description="Fastest, most economical",
         order=1,
         reasoning_effort="none",
     ),
-    "gpt-5.6-terra": ModelConfig(
-        id="gpt-5.6-terra",
-        api_model="gpt-5.6-terra",
-        label="GPT-5.6 Terra",
+    "gpt-6.2-sol": ModelConfig(
+        id="gpt-6.2-sol",
+        api_model="gpt-6.2-sol",
+        label="GPT-6.2 Sol",
         description="Balanced performance",
         order=2,
         reasoning_effort="medium",
     ),
-    "gpt-6-astra-medium": ModelConfig(
-        id="gpt-6-astra-medium",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra medium",
+    "gpt-6.2-astra-medium": ModelConfig(
+        id="gpt-6.2-astra-medium",
+        api_model="gpt-6.2-astra",
+        label="GPT-6.2 Astra medium",
         description="Most capable",
         order=3,
         reasoning_effort="medium",
     ),
-    "gpt-6-astra-high": ModelConfig(
-        id="gpt-6-astra-high",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra high",
+    "gpt-6.2-astra-high": ModelConfig(
+        id="gpt-6.2-astra-high",
+        api_model="gpt-6.2-astra",
+        label="GPT-6.2 Astra high",
         description="High-quality reasoning",
         order=4,
         reasoning_effort="high",
     ),
-    "gpt-6-astra-max": ModelConfig(
-        id="gpt-6-astra-max",
-        api_model="gpt-6-astra",
-        label="GPT-6 Astra max",
+    "gpt-6.2-astra-max": ModelConfig(
+        id="gpt-6.2-astra-max",
+        api_model="gpt-6.2-astra",
+        label="GPT-6.2 Astra max",
         description="Deepest reasoning (max)",
         order=5,
         reasoning_effort="max",
     ),
-    "claude-haiku-4-5": ModelConfig(
-        id="claude-haiku-4-5",
-        api_model="claude-haiku-4-5",
-        label="Claude Haiku 4.5",
+    "claude-haiku-5-5": ModelConfig(
+        id="claude-haiku-5-5",
+        api_model="claude-haiku-5-5",
+        label="Claude Haiku 5.5",
         description="Fastest Claude",
         order=6,
-        reasoning_effort=None,
+        # Haiku 5.5 thinks by default (at medium); low keeps it the fast option.
+        reasoning_effort="low",
     ),
-    "claude-sonnet-5": ModelConfig(
-        id="claude-sonnet-5",
-        api_model="claude-sonnet-5",
-        label="Claude Sonnet 5",
+    "claude-sonnet-5-5": ModelConfig(
+        id="claude-sonnet-5-5",
+        api_model="claude-sonnet-5-5",
+        label="Claude Sonnet 5.5",
         description="Balanced Claude",
         order=7,
         reasoning_effort="medium",
+        refusal_fallback=True,
     ),
-    "claude-fable-5-1-medium": ModelConfig(
-        id="claude-fable-5-1-medium",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 medium",
+    "claude-fable-5-2-medium": ModelConfig(
+        id="claude-fable-5-2-medium",
+        api_model="claude-fable-5-2",
+        label="Claude Fable 5.2 medium",
         description="Most capable Claude",
         order=8,
         reasoning_effort="medium",
         refusal_fallback=True,
         plain_prose=True,
     ),
-    "claude-fable-5-1-high": ModelConfig(
-        id="claude-fable-5-1-high",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 high",
+    "claude-fable-5-2-high": ModelConfig(
+        id="claude-fable-5-2-high",
+        api_model="claude-fable-5-2",
+        label="Claude Fable 5.2 high",
         description="High-quality reasoning",
         order=9,
         reasoning_effort="high",
         refusal_fallback=True,
         plain_prose=True,
     ),
-    "claude-fable-5-1-max": ModelConfig(
-        id="claude-fable-5-1-max",
-        api_model="claude-fable-5-1",
-        label="Claude Fable 5.1 max",
+    "claude-fable-5-2-max": ModelConfig(
+        id="claude-fable-5-2-max",
+        api_model="claude-fable-5-2",
+        label="Claude Fable 5.2 max",
         description="Deepest reasoning (max)",
         order=10,
         reasoning_effort="max",
@@ -264,27 +266,37 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
 # The map is one hop deep: when a replacement is itself retired, every entry
 # that pointed at it is re-pointed at the new replacement.
 RETIRED_MODELS: dict[str, SupportedModel] = {
-    # Retired 2026-08-18 for the GPT-5.6 family, whose Sol tier has since
-    # given way to GPT-6 Astra
-    "gpt-5.4-nano-2026-03-17": "gpt-5.6-luna",
-    "gpt-5.4-mini-2026-03-17": "gpt-5.6-terra",
-    "gpt-5.5-medium": "gpt-6-astra-medium",
-    "gpt-5.5-high": "gpt-6-astra-high",
-    "gpt-5.5-xhigh": "gpt-6-astra-max",
-    # Retired 2026-08-18 for Claude 5, whose Opus tier has since given way to
-    # Claude Fable 5.1
-    "claude-sonnet-4-6": "claude-sonnet-5",
-    "claude-opus-4-8-medium": "claude-fable-5-1-medium",
-    "claude-opus-4-8-high": "claude-fable-5-1-high",
-    "claude-opus-4-8-xhigh": "claude-fable-5-1-max",
-    # Retired 2026-09-09, replaced by GPT-6 Astra
-    "gpt-5.6-sol-medium": "gpt-6-astra-medium",
-    "gpt-5.6-sol-high": "gpt-6-astra-high",
-    "gpt-5.6-sol-max": "gpt-6-astra-max",
-    # Retired 2026-09-09, replaced by Claude Fable 5.1
-    "claude-opus-5-medium": "claude-fable-5-1-medium",
-    "claude-opus-5-high": "claude-fable-5-1-high",
-    "claude-opus-5-max": "claude-fable-5-1-max",
+    # Retired 2026-08-18 for the GPT-5.6 family
+    "gpt-5.4-nano-2026-03-17": "gpt-6-luna",
+    "gpt-5.4-mini-2026-03-17": "gpt-6.2-sol",
+    "gpt-5.5-medium": "gpt-6.2-astra-medium",
+    "gpt-5.5-high": "gpt-6.2-astra-high",
+    "gpt-5.5-xhigh": "gpt-6.2-astra-max",
+    # Retired 2026-08-18 for Claude 5
+    "claude-sonnet-4-6": "claude-sonnet-5-5",
+    "claude-opus-4-8-medium": "claude-fable-5-2-medium",
+    "claude-opus-4-8-high": "claude-fable-5-2-high",
+    "claude-opus-4-8-xhigh": "claude-fable-5-2-max",
+    # Retired 2026-09-09 for GPT-6 Astra
+    "gpt-5.6-sol-medium": "gpt-6.2-astra-medium",
+    "gpt-5.6-sol-high": "gpt-6.2-astra-high",
+    "gpt-5.6-sol-max": "gpt-6.2-astra-max",
+    # Retired 2026-09-09 for Claude Fable 5.1
+    "claude-opus-5-medium": "claude-fable-5-2-medium",
+    "claude-opus-5-high": "claude-fable-5-2-high",
+    "claude-opus-5-max": "claude-fable-5-2-max",
+    # Retired 2026-11-19 for GPT-6 Luna, GPT-6.2 Sol and GPT-6.2 Astra
+    "gpt-5.6-luna": "gpt-6-luna",
+    "gpt-5.6-terra": "gpt-6.2-sol",
+    "gpt-6-astra-medium": "gpt-6.2-astra-medium",
+    "gpt-6-astra-high": "gpt-6.2-astra-high",
+    "gpt-6-astra-max": "gpt-6.2-astra-max",
+    # Retired 2026-11-19 for Claude Haiku 5.5, Sonnet 5.5 and Fable 5.2
+    "claude-haiku-4-5": "claude-haiku-5-5",
+    "claude-sonnet-5": "claude-sonnet-5-5",
+    "claude-fable-5-1-medium": "claude-fable-5-2-medium",
+    "claude-fable-5-1-high": "claude-fable-5-2-high",
+    "claude-fable-5-1-max": "claude-fable-5-2-max",
 }
 
 

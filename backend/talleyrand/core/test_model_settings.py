@@ -26,7 +26,7 @@ from talleyrand.core.model_settings import (
 # meter; it lives alongside the backend in the repository.
 FRONTEND_MODELS = Path(__file__).resolve().parents[3] / "frontend" / "src" / "config" / "models.ts"
 
-FABLE_5_1_IDS = {"claude-fable-5-1-medium", "claude-fable-5-1-high", "claude-fable-5-1-max"}
+FABLE_5_2_IDS = {"claude-fable-5-2-medium", "claude-fable-5-2-high", "claude-fable-5-2-max"}
 
 
 def test_every_retired_model_points_at_a_current_one():
@@ -46,21 +46,25 @@ def test_current_ids_resolve_to_themselves():
 
 
 def test_retired_ids_resolve_to_their_replacement():
-    assert resolve_model_id("gpt-5.6-sol-medium") == "gpt-6-astra-medium"
-    assert resolve_model_id("claude-opus-5-max") == "claude-fable-5-1-max"
+    assert resolve_model_id("gpt-6-astra-medium") == "gpt-6.2-astra-medium"
+    assert resolve_model_id("gpt-5.6-terra") == "gpt-6.2-sol"
+    assert resolve_model_id("claude-fable-5-1-max") == "claude-fable-5-2-max"
+    assert resolve_model_id("claude-haiku-4-5") == "claude-haiku-5-5"
 
 
 def test_a_retired_replacement_is_skipped_over_not_chained():
     # Resolution is a single lookup, so an id retired in an earlier bump must
     # point straight at today's model, not at the model that replaced it then.
-    assert resolve_model_id("gpt-5.5-medium") == "gpt-6-astra-medium"
-    assert resolve_model_id("claude-opus-4-8-xhigh") == "claude-fable-5-1-max"
+    assert resolve_model_id("gpt-5.5-medium") == "gpt-6.2-astra-medium"
+    assert resolve_model_id("claude-opus-4-8-xhigh") == "claude-fable-5-2-max"
+    # The demo cases were answered by Opus 5 max.
+    assert resolve_model_id("claude-opus-5-max") == "claude-fable-5-2-max"
 
 
 def test_a_case_answered_by_a_retired_model_still_runs():
     config = get_model_config("gpt-5.4-nano-2026-03-17")
-    assert config.id == "gpt-5.6-luna"
-    assert config.api_model == "gpt-5.6-luna"
+    assert config.id == "gpt-6-luna"
+    assert config.api_model == "gpt-6-luna"
 
 
 def test_unknown_model_is_an_error_rather_than_a_guess():
@@ -68,22 +72,22 @@ def test_unknown_model_is_an_error_rather_than_a_guess():
         resolve_model_id("gpt-imaginary")
 
 
-def test_reasoning_effort_none_is_explicit_not_absent():
-    # "none" is a real GPT-5.6 effort level; dropping it to None would silently
-    # give Luna the API default (medium) instead of no reasoning at all.
-    assert MODEL_CONFIGS["gpt-5.6-luna"].reasoning_effort == "none"
-    # Haiku rejects the effort parameter outright, so it must stay absent.
-    assert MODEL_CONFIGS["claude-haiku-4-5"].reasoning_effort is None
+def test_luna_is_asked_not_to_reason_at_all():
+    # "none" is a real GPT-6 Luna effort level; without it Luna would reason at
+    # its default (medium).
+    assert MODEL_CONFIGS["gpt-6-luna"].reasoning_effort == "none"
 
 
-def test_only_fable_5_1_opts_into_the_refusal_fallback():
-    fallback_ids = {m.id for m in MODEL_CONFIGS.values() if m.refusal_fallback}
-    assert fallback_ids == FABLE_5_1_IDS
+def test_none_effort_only_goes_to_models_that_accept_it():
+    # GPT-6.2 Sol and Astra reject "none", and no Claude model has it.
+    for config in MODEL_CONFIGS.values():
+        if config.reasoning_effort == "none":
+            assert config.api_model == "gpt-6-luna"
 
 
-def test_only_fable_5_1_is_asked_for_plain_prose():
+def test_only_fable_5_2_is_asked_for_plain_prose():
     plain_prose_ids = {m.id for m in MODEL_CONFIGS.values() if m.plain_prose}
-    assert plain_prose_ids == FABLE_5_1_IDS
+    assert plain_prose_ids == FABLE_5_2_IDS
 
 
 def test_every_preset_runs_on_a_model_with_a_recorded_window():

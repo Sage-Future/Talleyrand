@@ -76,8 +76,8 @@ ANTHROPIC_MARKDOWN_LINK_INSTRUCTION = (
     "This does not apply to the [[1.2]] cross-link tokens, which must stay exactly as written."
 )
 
-# Claude Fable 5.1 reaches for metaphor and flourish where a literal phrase
-# would do. Enabled per model via ModelConfig.plain_prose.
+# Claude Fable models reach for metaphor and flourish where a literal phrase
+# would do (first seen on Fable 5.1). Enabled per model via ModelConfig.plain_prose.
 ANTHROPIC_PLAIN_PROSE_INSTRUCTION = (
     "\n\nMannered prose substitutes metaphor and flourish for direct statement. "
     'Instead of "a parameter worth varying," the mannered writer produces '
@@ -89,13 +89,18 @@ ANTHROPIC_PLAIN_PROSE_INSTRUCTION = (
     "The fix is to say what you mean. When a literal phrase is available, use it."
 )
 
-# Claude Fable 5.1's safety classifiers can decline a request outright, which would
-# otherwise reach the reader as a blank answer. Anthropic can re-run the refused
-# request on a stand-in model inside the same call; enabled per model via
-# ModelConfig.refusal_fallback and announced in the answer so the reader always
-# knows which model actually wrote it.
-ANTHROPIC_REFUSAL_FALLBACK_BETA = "server-side-fallback-2026-06-01"
-ANTHROPIC_REFUSAL_FALLBACK_MODEL = "claude-opus-4-8"
+# Claude Fable 5.2's and Sonnet 5.5's safety classifiers can decline a request
+# outright, which would otherwise reach the reader as a blank answer. Anthropic
+# can re-run the refused request on a stand-in model inside the same call;
+# enabled per model via ModelConfig.refusal_fallback and announced in the answer
+# so the reader always knows which model actually wrote it.
+#
+# "default" lets Anthropic pick the stand-in by why the request was declined
+# (Fable 5.2 falls back to an Opus model, Sonnet 5.5 to Sonnet 5), so no model
+# list here goes stale when a stand-in is retired. A category with no
+# recommended stand-in comes back as a plain refusal. The scalar form needs
+# this beta; the older -2026-06-01 header takes only an explicit model list.
+ANTHROPIC_REFUSAL_FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 PROVIDER_LABELS: dict[Provider, str] = {"openai": "OpenAI", "anthropic": "Anthropic"}
 
@@ -505,11 +510,7 @@ async def _stream_openai(
         # searches themselves are billed either way, so this is metadata we
         # have already paid for.
         include=["web_search_call.action.sources"] if web_search_enabled else None,
-        # "none" is a real effort level, so test against None rather than truthiness —
-        # omitting the parameter would silently give the model its default effort.
-        reasoning=(
-            {"effort": model.reasoning_effort} if model.reasoning_effort is not None else None
-        ),
+        reasoning={"effort": model.reasoning_effort},
         text={"verbosity": verbosity},
         stream=True,
     )
@@ -629,12 +630,14 @@ async def _stream_anthropic(
         "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
         "system": instructions,
         "messages": [{"role": "user", "content": content}],
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": model.reasoning_effort},
         "stream": True,
     }
     if web_search_enabled:
-        # The default allowed_callers includes programmatic tool calling, which
-        # Haiku rejects; we never run code execution, so direct-only is right
-        # for every model.
+        # Direct calls only: the default allowed_callers also lets code
+        # execution call the tool (programmatic tool calling), which these
+        # requests never use.
         request_kwargs["tools"] = [
             {
                 "type": "web_search_20260209",
@@ -642,13 +645,10 @@ async def _stream_anthropic(
                 "allowed_callers": ["direct"],
             }
         ]
-    if model.reasoning_effort is not None:
-        request_kwargs["thinking"] = {"type": "adaptive"}
-        request_kwargs["output_config"] = {"effort": model.reasoning_effort}
 
     if model.refusal_fallback:
         request_kwargs["betas"] = [ANTHROPIC_REFUSAL_FALLBACK_BETA]
-        request_kwargs["fallbacks"] = [{"model": ANTHROPIC_REFUSAL_FALLBACK_MODEL}]
+        request_kwargs["fallbacks"] = "default"
         stream = await client.beta.messages.create(**request_kwargs)
     else:
         stream = await client.messages.create(**request_kwargs)

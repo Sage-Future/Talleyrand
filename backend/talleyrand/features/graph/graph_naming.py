@@ -17,9 +17,9 @@ from talleyrand.features.graph.models import (
 )
 from talleyrand.models.user import User
 
-NAMING_MODEL = "gpt-5.6-luna"
+NAMING_MODEL = "gpt-6-luna"
 # Naming a case is a one-line extraction, so it runs on the cheapest model with
-# reasoning switched off. Left unset, GPT-5.6 would reason at medium by default.
+# reasoning switched off. Left unset, GPT-6 Luna would reason at medium by default.
 NAMING_REASONING_EFFORT = "none"
 # The opening of each answer is plenty to name a case by; the cut is made in
 # the database so the answers never travel whole.

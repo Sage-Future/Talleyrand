@@ -32,7 +32,7 @@ def case() -> GraphNoId:
                 id=ROOT,
                 query="Does the deal hold?",
                 response="It holds, narrowly.",
-                selected_model="gpt-6-astra-medium",
+                selected_model="gpt-6.2-astra-medium",
                 documents=[],
                 selection_suggestions=[],
                 selections=[],
@@ -62,7 +62,7 @@ def count(client: TestClient, model: str, **headers: str):
 
 
 def test_openai_model_is_counted_against_its_input_limit(client):
-    response = count(client, "gpt-6-astra-medium")
+    response = count(client, "gpt-6.2-astra-medium")
 
     assert response.status_code == 200
     body = response.json()
@@ -77,11 +77,11 @@ def test_claude_model_is_counted_by_anthropic_with_the_key_the_answer_would_use(
     counter = AsyncMock(return_value=123_456)
     monkeypatch.setattr(context_size_module, "count_prompt_tokens", counter)
 
-    response = count(client, "claude-fable-5-1-high", **{"X-Anthropic-API-Key": "sk-ant"})
+    response = count(client, "claude-fable-5-2-high", **{"X-Anthropic-API-Key": "sk-ant"})
 
     assert response.json() == {"tokens": 123_456, "maxInputTokens": 936_000, "estimated": False}
     window, api_key, _system, prompt = counter.call_args.args
-    assert (window.api_model, api_key) == ("claude-fable-5-1", "sk-ant")
+    assert (window.api_model, api_key) == ("claude-fable-5-2", "sk-ant")
     assert "CURRENT QUESTION: [1.1] " in prompt
 
 
@@ -89,7 +89,7 @@ def test_claude_model_without_a_key_is_estimated(client, monkeypatch):
     counter = AsyncMock()
     monkeypatch.setattr(context_size_module, "count_prompt_tokens", counter)
 
-    response = count(client, "claude-fable-5-1-high")
+    response = count(client, "claude-fable-5-2-high")
 
     body = response.json()
     assert body["estimated"] is True
@@ -105,4 +105,4 @@ def test_missing_case_is_not_found(client, monkeypatch):
     monkeypatch.setattr(
         context_size_module.manager, "load_effective_graph", AsyncMock(return_value=None)
     )
-    assert count(client, "gpt-6-astra-medium").status_code == 404
+    assert count(client, "gpt-6.2-astra-medium").status_code == 404

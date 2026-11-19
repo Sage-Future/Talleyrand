@@ -15,7 +15,7 @@ from talleyrand.features.transcription.dtos import (
     TranscribeResponseDTO,
 )
 
-TRANSCRIBE_MODEL = "gpt-4o-transcribe"
+TRANSCRIBE_MODEL = "gpt-transcribe"
 
 
 def _extension_from_mime(mime_type: str) -> str:
