@@ -26,8 +26,6 @@ from talleyrand.core.model_settings import (
 # meter; it lives alongside the backend in the repository.
 FRONTEND_MODELS = Path(__file__).resolve().parents[3] / "frontend" / "src" / "config" / "models.ts"
 
-FABLE_5_2_IDS = {"claude-fable-5-2-medium", "claude-fable-5-2-high", "claude-fable-5-2-max"}
-
 
 def test_every_retired_model_points_at_a_current_one():
     for retired_id, replacement in RETIRED_MODELS.items():
@@ -83,11 +81,6 @@ def test_none_effort_only_goes_to_models_that_accept_it():
     for config in MODEL_CONFIGS.values():
         if config.reasoning_effort == "none":
             assert config.api_model == "gpt-6-luna"
-
-
-def test_only_fable_5_2_is_asked_for_plain_prose():
-    plain_prose_ids = {m.id for m in MODEL_CONFIGS.values() if m.plain_prose}
-    assert plain_prose_ids == FABLE_5_2_IDS
 
 
 def test_every_preset_runs_on_a_model_with_a_recorded_window():

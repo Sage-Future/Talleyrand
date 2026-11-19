@@ -134,9 +134,6 @@ class ModelConfig:
             substitution is announced in the answer (see core/llm.py). Claude Haiku 5.5
             can decline too but has no fallback, so its refusals reach the reader as a
             notice instead.
-        plain_prose: Whether to tell the model to prefer a literal phrase over metaphor
-            and flourish. Set for models whose answers otherwise read as mannered; the
-            instruction itself lives in core/llm.py.
     """
 
     id: SupportedModel
@@ -146,7 +143,6 @@ class ModelConfig:
     order: int
     reasoning_effort: ReasoningEffort
     refusal_fallback: bool = False
-    plain_prose: bool = False
 
     @property
     def window(self) -> ModelWindow:
@@ -228,7 +224,6 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         order=8,
         reasoning_effort="medium",
         refusal_fallback=True,
-        plain_prose=True,
     ),
     "claude-fable-5-2-high": ModelConfig(
         id="claude-fable-5-2-high",
@@ -238,7 +233,6 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         order=9,
         reasoning_effort="high",
         refusal_fallback=True,
-        plain_prose=True,
     ),
     "claude-fable-5-2-max": ModelConfig(
         id="claude-fable-5-2-max",
@@ -248,7 +242,6 @@ MODEL_CONFIGS: dict[SupportedModel, ModelConfig] = {
         order=10,
         reasoning_effort="max",
         refusal_fallback=True,
-        plain_prose=True,
     ),
 }
 

@@ -76,19 +76,6 @@ ANTHROPIC_MARKDOWN_LINK_INSTRUCTION = (
     "This does not apply to the [[1.2]] cross-link tokens, which must stay exactly as written."
 )
 
-# Claude Fable models reach for metaphor and flourish where a literal phrase
-# would do (first seen on Fable 5.1). Enabled per model via ModelConfig.plain_prose.
-ANTHROPIC_PLAIN_PROSE_INSTRUCTION = (
-    "\n\nMannered prose substitutes metaphor and flourish for direct statement. "
-    'Instead of "a parameter worth varying," the mannered writer produces '
-    '"a dial worth turning." Instead of "this point still matters," they write '
-    '"this point earns its keep." The phrases exist to display the writer, not to '
-    "convey the idea, and readers can tell. That is why mannered prose irritates: it "
-    "makes the reader work harder so the writer can perform. It is also imprecise. "
-    "Metaphors drag in connotations the writer did not choose and cannot control. "
-    "The fix is to say what you mean. When a literal phrase is available, use it."
-)
-
 # Claude Fable 5.2's and Sonnet 5.5's safety classifiers can decline a request
 # outright, which would otherwise reach the reader as a blank answer. Anthropic
 # can re-run the refused request on a stand-in model inside the same call;
@@ -589,8 +576,6 @@ async def _stream_anthropic(
     if verbosity == "low":
         instructions += ANTHROPIC_CONCISE_INSTRUCTION
     instructions += ANTHROPIC_MARKDOWN_LINK_INSTRUCTION
-    if model.plain_prose:
-        instructions += ANTHROPIC_PLAIN_PROSE_INSTRUCTION
 
     content: list[dict] = []
     if cached_prefix:
