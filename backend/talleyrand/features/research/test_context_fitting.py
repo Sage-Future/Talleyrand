@@ -32,7 +32,7 @@ NOW = datetime(2026, 9, 14, tzinfo=UTC)
 ROOT = uuid4()
 CHILD = uuid4()
 CHARS_PER_TOKEN = 4
-WINDOW = get_model_window("gpt-6-astra")
+WINDOW = get_model_window("gpt-6.2-astra")
 # More than the model takes, at the stub's four characters to the token
 OVERSIZED = "plan text. " * ((WINDOW.max_input_tokens * CHARS_PER_TOKEN) // 11 + 10_000)
 
@@ -42,7 +42,7 @@ def content(node_id: UUID, query: str, response: str = "") -> NodeContentDTO:
         id=node_id,
         query=query,
         response=response,
-        selected_model="gpt-6-astra-medium",
+        selected_model="gpt-6.2-astra-medium",
         documents=[],
         selection_suggestions=[],
         selections=[],
@@ -174,7 +174,7 @@ def test_draft_is_counted_as_the_question_it_would_become():
         parent_node_id=CHILD,
         draft_query="Who would notice first?",
         draft_documents=[DocumentDTO(id="d2", name="memo", type="txt", content="The memo.")],
-        model="gpt-6-astra-medium",
+        model="gpt-6.2-astra-medium",
     )
 
     assert "[1.1.1] QUESTION: Who would notice first?" in context.body
@@ -188,7 +188,7 @@ def test_draft_under_an_unknown_parent_is_a_new_root():
         parent_node_id=uuid4(),
         draft_query="Where does the money go?",
         draft_documents=[],
-        model="gpt-6-astra-medium",
+        model="gpt-6.2-astra-medium",
     )
 
     assert "[2] QUESTION: Where does the money go?" in context.body
